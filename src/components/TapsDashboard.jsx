@@ -67,7 +67,7 @@ export default function TapsDashboard() {
       {cards.map(({ title, value, note, icon: Icon, iconStyle, topUp }) => (
         <div
           key={title}
-          className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5"
+          className="min-w-0 rounded-xl border border-border bg-card px-4 py-4 shadow-sm sm:px-5"
         >
           <div className="mb-4 flex items-center justify-between gap-3">
             <div
@@ -79,7 +79,7 @@ export default function TapsDashboard() {
             {topUp && (
               <button
                 type="button"
-                className="rounded-md bg-sky-400 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500"
+                className="rounded-md bg-whatsapp px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500"
               >
                 Top Up +
               </button>
@@ -91,7 +91,7 @@ export default function TapsDashboard() {
           </p>
 
           <div className="flex items-baseline gap-2">
-            <h3 className="text-xl font-bold text-[#11255C] sm:text-2xl">
+            <h3 className="text-xl font-bold text-text-secondary sm:text-2xl">
               {loading ? "..." : value}
             </h3>
 

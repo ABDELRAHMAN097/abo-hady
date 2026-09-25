@@ -24,7 +24,12 @@ const auth = getAuth(app);
 
 const googleProvider = new GoogleAuthProvider();
 
-export const registerWithEmail = async ({ email, password, name, phone = "" }) => {
+export const registerWithEmail = async ({
+    email,
+    password,
+    name,
+    phone = "",
+}) => {
     const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -39,24 +44,35 @@ export const registerWithEmail = async ({ email, password, name, phone = "" }) =
 
     try {
         await sendEmailVerification(user);
-    } catch (e) {
-        console.warn("Could not send email verification:", e);
+    } catch (error) {
+        console.warn(
+            "Could not send email verification:",
+            error
+        );
     }
 
-    // إنشاء مستند المستخدم في Firestore مع رتبة عميل كافتراضي
     try {
         await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,
             name: name || "",
-            email: email,
+            email: email || "",
             phone: phone || "",
             role: "customer",
             status: "active",
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
+
+        console.log(
+            "✅ Firestore user document created:",
+            user.uid
+        );
     } catch (firestoreError) {
-        console.error("Firestore user creation error:", firestoreError);
+        console.error(
+            "❌ Firestore user creation error:",
+            firestoreError
+        );
+        throw firestoreError;
     }
 
     return user;

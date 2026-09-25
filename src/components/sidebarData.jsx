@@ -42,19 +42,6 @@ export const menuItems = [
     allowedRoles: ["admin", "super_admin"],
   },
   {
-    name: "Question Bank",
-    path: "/question-bank",
-    icon: GoInbox,
-    allowedRoles: ["admin", "super_admin"],
-  },
-  {
-    name: "Groups",
-    path: "/groups",
-    icon: BiGroup,
-    hasSubmenu: true,
-    allowedRoles: ["admin", "super_admin"],
-  },
-  {
     name: "Reports",
     path: "/reports",
     icon: TbFileText,

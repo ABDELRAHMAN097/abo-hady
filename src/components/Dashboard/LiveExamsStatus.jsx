@@ -31,32 +31,32 @@ const exams = [
 
 export default function LiveExamsStatus() {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100/50 shadow-sm">
+    <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
       
-      <div className="pb-5 border-b border-gray-100">
+      <div className="pb-5 border-b border-border">
         <h4 className="text-xl font-bold text-primary-color">
           Live Exams Status
         </h4>
       </div>
 
       <div className="mt-5 overflow-x-auto">
-        <div className="min-w-[700px] border border-[#AEBBD5] rounded-xl overflow-hidden">
+        <div className="min-w-[700px] border border-border rounded-xl overflow-hidden">
 
-          <div className="grid grid-cols-[2fr_1.6fr_1.2fr_0.7fr] bg-[#F9FAFB] border-b border-[#AEBBD5]">
+          <div className="grid grid-cols-[2fr_1.6fr_1.2fr_0.7fr] bg-surface border-b border-border">
 
-            <div className="px-5 py-4 text-sm font-semibold text-[#173675]">
+            <div className="px-5 py-4 text-sm font-semibold text-text-primary">
               Exam Details
             </div>
 
-            <div className="px-5 py-4 text-sm font-semibold text-[#173675] text-center">
+            <div className="px-5 py-4 text-sm font-semibold text-text-primary text-center">
               Submissions
             </div>
 
-            <div className="px-5 py-4 text-sm font-semibold text-[#173675] text-center">
+            <div className="px-5 py-4 text-sm font-semibold text-text-primary text-center">
               Avg. Score
             </div>
 
-            <div className="px-5 py-4 text-sm font-semibold text-[#173675] text-center">
+            <div className="px-5 py-4 text-sm font-semibold text-text-primary text-center">
               Action
             </div>
 
@@ -69,31 +69,31 @@ export default function LiveExamsStatus() {
                 grid grid-cols-[2fr_1.6fr_1.2fr_0.7fr]
                 min-h-[74px]
                 items-center
-                bg-white
+                bg-surface
                 ${index !== exams.length - 1 ? "border-b border-[#AEBBD5]" : ""}
               `}
             >
 
               <div className="px-5 py-3">
-                <p className="text-sm font-semibold text-[#173675] leading-5">
+                <p className="text-sm font-semibold text-text-primary leading-5">
                   {exam.title}
                 </p>
 
-                <p className="text-[10px] text-[#A4B1C8] mt-1">
+                <p className="text-[10px] text-text-muted mt-1">
                   {exam.group}
                 </p>
               </div>
 
               <div className="px-5 flex flex-col items-center justify-center">
 
-                <span className="text-xs text-[#8A98B2] font-medium mb-2">
+                <span className="text-xs text-text-muted font-medium mb-2">
                   {exam.submissions}
                 </span>
 
-                <div className="w-full max-w-[145px] h-[7px] bg-[#F0F2F5] rounded-full overflow-hidden">
+                <div className="w-full max-w-[145px] h-[7px] bg-surface rounded-full overflow-hidden">
 
                   <div
-                    className="h-full bg-[#2CB9E8] rounded-full transition-all duration-500"
+                    className="h-full bg-primary-color rounded-full transition-all duration-500"
                     style={{
                       width: `${exam.submittedPercent}%`,
                     }}
@@ -114,7 +114,7 @@ export default function LiveExamsStatus() {
                 <button
                   type="button"
                   className="
-                    text-[#173675]
+                    text-whatsapp
                     text-xl
                     font-bold
                     tracking-[2px]

@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { NavLink, Link, useNavigate, useParams } from "react-router-dom";
 import { HiOutlineChevronDown } from "react-icons/hi";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 
@@ -89,21 +89,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           absolute
           top-1/2
           -translate-y-1/2
-          end-[-12px]
+          end-[-7px]
           z-50
           hidden
           lg:flex
-          w-6
+          w-3
           h-16
           items-center
           justify-center
           border
-          border-gray-300
+          border-border
           rounded-md
           shadow-sm
-
           cursor-pointer
-          hover:bg-gray-50
+          hover:bg-border
 
           transition-colors
           duration-200
@@ -134,10 +133,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         <div className="flex-1 overflow-y-auto px-2 py-4">
           {/* Logo */}
           <div className="mb-5">
-            <AuthHeader
-              title="أبو هادي"
-              titleClass="text-hover-color text-3xl font-bold"
-            />
+            <Link to={`/${locale}`}>
+              <AuthHeader
+                title="أبو هادي"
+                titleClass="text-hover-color text-3xl font-bold"
+              />
+            </Link>
           </div>
 
           {/* Navigation */}

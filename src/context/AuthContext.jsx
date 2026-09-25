@@ -1,8 +1,23 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, getUserProfile } from "@/services/auth";
+
+import {
+    auth,
+    getUserProfile,
+} from "@/services/auth";
 
 const AuthContext = createContext(null);
+
+const DASHBOARD_ROLES = [
+    "admin",
+    "super_admin",
+    "driver",
+];
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -11,70 +26,107 @@ export const AuthProvider = ({ children }) => {
 
     const refreshProfile = async (uid) => {
         const targetUid = uid || user?.uid;
+
         if (!targetUid) return null;
 
         try {
-            const data = await getUserProfile(targetUid);
+            const data = await getUserProfile(
+                targetUid
+            );
+
             if (data) {
                 setProfile(data);
                 return data;
             }
         } catch (error) {
-            console.error("Error refreshing profile:", error);
+            console.error(
+                "Error refreshing profile:",
+                error
+            );
         }
+
         return null;
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setUser(firebaseUser);
-                try {
-                    const userProfile = await getUserProfile(firebaseUser.uid);
-                    if (userProfile) {
-                        setProfile(userProfile);
-                    } else {
-                        // في حال كان المستخدم مسجلاً قديماً بدون مستند Firestore
+        const unsubscribe =
+            onAuthStateChanged(
+                auth,
+                async (firebaseUser) => {
+                    if (!firebaseUser) {
+                        setUser(null);
+                        setProfile(null);
+                        setLoading(false);
+                        return;
+                    }
+
+                    setUser(firebaseUser);
+
+                    try {
+                        const userProfile =
+                            await getUserProfile(
+                                firebaseUser.uid
+                            );
+
+                        setProfile(
+                            userProfile || {
+                                uid: firebaseUser.uid,
+                                name:
+                                    firebaseUser.displayName ||
+                                    "مستخدم",
+                                email:
+                                    firebaseUser.email,
+                                role: "customer",
+                                status: "active",
+                            }
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Error loading user profile:",
+                            error
+                        );
+
                         setProfile({
                             uid: firebaseUser.uid,
-                            name: firebaseUser.displayName || "مستخدم",
-                            email: firebaseUser.email,
+                            name:
+                                firebaseUser.displayName ||
+                                "مستخدم",
+                            email:
+                                firebaseUser.email,
                             role: "customer",
                             status: "active",
                         });
                     }
-                } catch (err) {
-                    console.error("Error loading user profile:", err);
-                    setProfile({
-                        uid: firebaseUser.uid,
-                        name: firebaseUser.displayName || "مستخدم",
-                        email: firebaseUser.email,
-                        role: "customer",
-                        status: "active",
-                    });
-                }
-            } else {
-                setUser(null);
-                setProfile(null);
-            }
-            setLoading(false);
-        });
 
-        return () => unsubscribe();
+                    setLoading(false);
+                }
+            );
+
+        return unsubscribe;
     }, []);
 
-    const role = profile?.role || "customer";
+    const role =
+        profile?.role || "customer";
 
-    const isSuperAdmin = role === "super_admin";
-    const isAdmin = role === "admin" || isSuperAdmin;
-    const isDriver = role === "driver";
-    const isCustomer = role === "customer";
-    const canAccessDashboard = !isCustomer;
+    const isSuperAdmin =
+        role === "super_admin";
 
-    const hasRole = (allowedRoles = []) => {
-        if (!allowedRoles || allowedRoles.length === 0) return true;
-        return allowedRoles.includes(role);
-    };
+    const isAdmin =
+        role === "admin" ||
+        isSuperAdmin;
+
+    const isDriver =
+        role === "driver";
+
+    const isCustomer =
+        role === "customer";
+
+    const canAccessDashboard =
+        DASHBOARD_ROLES.includes(role);
+
+    const hasRole = (allowedRoles = []) =>
+        !allowedRoles.length ||
+        allowedRoles.includes(role);
 
     return (
         <AuthContext.Provider
@@ -99,8 +151,13 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
+
     if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
+        throw new Error(
+            "useAuth must be used within an AuthProvider"
+        );
     }
+
     return context;
 };
+

@@ -60,16 +60,16 @@ const CustomDot = ({ cx, cy, index }) => {
 
 export default function StudentPerformance() {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100/50 shadow-sm">
+    <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
         {/* Title */}
         <div className="flex flex-col items-stretch">
           <h4 className="text-xl font-bold text-primary-color mb-1">
             Student Performance Trend
           </h4>
 
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-text-primary">
             Average Grades for The Last 6 Exams
           </span>
         </div>
@@ -175,7 +175,7 @@ export default function StudentPerformance() {
             <Line
               type="monotone"
               dataKey="active"
-              stroke="#11255C"
+              stroke="#25D366"
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"

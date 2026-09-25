@@ -96,7 +96,7 @@ export default function RecentActivities() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100/50 shadow-sm overflow-hidden p-6">
+    <div className="bg-surface rounded-2xl border border-gray-100/50 shadow-sm overflow-hidden p-6">
       <div className="px-5 py-4 border-b border-gray-100">
         <h4 className="text-lg font-bold text-[#173675]">
           {t('Recent')}
@@ -152,7 +152,7 @@ export default function RecentActivities() {
                       {t('New Join Request')}
                     </h5>
 
-                    <span className="text-[10px] text-[#94A3B8] whitespace-nowrap pt-0.5">
+                    <span className="text-[10px] text-[#94A3B8] surfacespace-nowrap pt-0.5">
                       {formatTime(activity.requested_at)}
                     </span>
                   </div>
@@ -168,7 +168,7 @@ export default function RecentActivities() {
                       disabled={isProcessing}
                       onClick={() => handleReject(activity.id)}
                       title="Reject"
-                      className="w-8 h-8 rounded-lg border border-gray-100 bg-white flex items-center justify-center text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-lg border border-gray-100 bg-surface flex items-center justify-center text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <LuUserRoundX size={15} strokeWidth={1.8} />
                     </motion.button>
@@ -179,7 +179,7 @@ export default function RecentActivities() {
                       disabled={isProcessing}
                       onClick={() => handleAccept(activity.id)}
                       title="Accept"
-                      className="w-8 h-8 rounded-lg border border-gray-100 bg-white flex items-center justify-center text-[#22C55E] hover:bg-green-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-lg border border-gray-100 bg-surface flex items-center justify-center text-[#22C55E] hover:bg-green-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <LuUserRoundCheck size={15} strokeWidth={1.8} />
                     </motion.button>

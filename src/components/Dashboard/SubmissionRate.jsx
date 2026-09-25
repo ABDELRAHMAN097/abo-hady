@@ -112,14 +112,14 @@ export default function SubmissionRate() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white p-6 rounded-2xl border border-gray-100/50 shadow-sm"
+      className="bg-surface p-6 rounded-2xl border border-border shadow-sm"
     >
-      <div className="pb-4 border-b border-gray-100">
+      <div className="pb-4 border-b border-border">
         <h4 className="text-xl font-bold text-primary-color mb-1">
           {t("Submission Rate")}
         </h4>
 
-        <span className="text-xl font-bold text-gray-400">
+        <span className="text-xl font-bold text-text-primary">
           {loading ? t("Loading...") : `${students.length} ${t("Students")}`}
         </span>
       </div>
@@ -160,7 +160,7 @@ export default function SubmissionRate() {
 
         <div className="flex flex-col gap-3 min-w-[115px]">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#27418F]" />
+            <span className="w-2 h-2 rounded-full bg-whatsapp" />
             <span className="text-xl text-gray-600">{t("Submitted")}</span>
           </div>
 
