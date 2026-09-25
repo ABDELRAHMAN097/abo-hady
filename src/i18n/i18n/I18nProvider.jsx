@@ -104,7 +104,7 @@ const I18nProvider = () => {
   const descKey =
     descByPath[withoutLocale] ?? descByPath[normalizedPath] ?? "seo.home";
 
-  const title = `${t(seoKey)} | Taleb`;
+  const title = `${t(seoKey)} | Abo Hady`;
   const description = t(descKey);
 
   if (!isValidLocale) {

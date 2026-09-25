@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const slides = [
   {
-    title: "Welcome To Taleb Dashboard",
+    title: "Welcome To Abo Hady Dashboard",
     description:
       "Your All-In-One Platform To Automate Exams, Track Student Progress, And Manage Your Wallet Anytime, Anywhere.",
   },

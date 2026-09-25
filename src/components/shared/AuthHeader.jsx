@@ -1,5 +1,5 @@
 export default function AuthHeader({
-  title = "Taleb",
+  title = "Abo Hady",
   role = "",
   heading = "",
   description = "",
