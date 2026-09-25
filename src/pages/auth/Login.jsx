@@ -111,73 +111,87 @@ export default function Login() {
     });
 
     const handleGoogleSignIn = async () => {
-        try {
-            const result = await signInWithGoogle();
-            const firebaseUser = result.user;
-            const profile = await getUserProfile(
-                firebaseUser.uid
-            );
-            const role = profile?.role || "customer";
+    try {
+        const result = await signInWithGoogle();
 
-            const canAccessDashboard =
-                DASHBOARD_ROLES.includes(role);
-            toast.success(
-                "تم تسجيل الدخول بنجاح باستخدام Google!"
-            );
+        console.log("✅ Google authentication success:", result.user);
 
-            if (canAccessDashboard) {
-                navigate(`/${locale}/dashboard`, {
-                    replace: true,
-                });
-            } else {
-                navigate(`/${locale}`, {
-                    replace: true,
-                });
-            }
-        } catch (error) {
-            console.error(
-                "❌ Error signing in with Google:",
-                error
-            );
+        const firebaseUser = result.user;
 
-            switch (error?.code) {
-                case "auth/popup-closed-by-user":
-                    toast.error(
-                        "تم إغلاق نافذة Google."
-                    );
-                    break;
+        const profile = await getUserProfile(firebaseUser.uid);
 
-                case "auth/popup-blocked":
-                    toast.error(
-                        "المتصفح منع نافذة Google. اسمح بالنوافذ المنبثقة."
-                    );
-                    break;
+        console.log("✅ Google user profile:", profile);
 
-                case "auth/cancelled-popup-request":
-                    toast.error(
-                        "تم إلغاء عملية تسجيل الدخول."
-                    );
-                    break;
+        const role = profile?.role || "customer";
 
-                case "auth/account-exists-with-different-credential":
-                    toast.error(
-                        "هذا البريد مرتبط بطريقة تسجيل دخول أخرى."
-                    );
-                    break;
+        const canAccessDashboard = [
+            "admin",
+            "super_admin",
+            "driver",
+        ].includes(role);
 
-                case "auth/network-request-failed":
-                    toast.error(
-                        "تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت."
-                    );
-                    break;
+        toast.success(
+            "تم تسجيل الدخول بنجاح باستخدام Google!"
+        );
 
-                default:
-                    toast.error(
-                        "حدث خطأ أثناء التسجيل باستخدام Google."
-                    );
-            }
+        if (canAccessDashboard) {
+            navigate(`/${locale}/dashboard`, {
+                replace: true,
+            });
+        } else {
+            navigate(`/${locale}`, {
+                replace: true,
+            });
         }
-    };
+    } catch (error) {
+        console.error(
+            "❌ Google Sign In Error:",
+            error
+        );
+
+        switch (error?.code) {
+            case "auth/popup-closed-by-user":
+                toast.error("تم إغلاق نافذة Google.");
+                break;
+
+            case "auth/popup-blocked":
+                toast.error(
+                    "المتصفح منع نافذة Google. اسمح بالنوافذ المنبثقة."
+                );
+                break;
+
+            case "auth/cancelled-popup-request":
+                toast.error(
+                    "تم إلغاء عملية تسجيل الدخول."
+                );
+                break;
+
+            case "auth/account-exists-with-different-credential":
+                toast.error(
+                    "هذا البريد مرتبط بطريقة تسجيل دخول أخرى."
+                );
+                break;
+
+            case "auth/network-request-failed":
+                toast.error(
+                    "تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت."
+                );
+                break;
+
+            case "permission-denied":
+            case "firestore/permission-denied":
+                toast.error(
+                    "تم تسجيل الدخول باستخدام Google، ولكن تعذر تحميل بيانات الحساب."
+                );
+                break;
+
+            default:
+                toast.error(
+                    "حدث خطأ أثناء تسجيل الدخول باستخدام Google."
+                );
+        }
+    }
+};
     return (
         <div className="w-full flex flex-col items-center justify-center gap-2 p-0 m-0">
 
