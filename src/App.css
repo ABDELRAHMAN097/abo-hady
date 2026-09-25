@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Aladin&family=Cairo:wght@200..1000&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Brand Colors */
+  --color-primary-color: #10B981;
+  --color-primary-hover: #059669;
+  --color-secondary-color: #0F172A;
+  --color-accent: #D4AF37;
+
+  /* Backgrounds */
+  --color-background: #0B0C10;
+  --color-surface: #111827;
+  --color-card: #1F2937;
+
+  /* Text */
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+
+  /* Border */
+  --color-border: #374151;
+
+  /* States */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  /* WhatsApp */
+  --color-whatsapp: #25D366;
+
+  /* Existing */
+  --color-hover-color: #D7F2FE;
+
+  /* Fonts */
+  --font-secondary: "Aladin", cursive;
+  --font-primary: "Cairo", sans-serif;
+}
+
+
+/* =========================================================
+   LANDING PAGE ANIMATIONS
+========================================================= */
+
+@keyframes abuShimmer {
+    0% {
+        transform: translateX(-150%);
+    }
+
+    100% {
+        transform: translateX(450%);
+    }
+}
+
+@keyframes abuFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes abuFloatReverse {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+@keyframes abuPulseGlow {
+    0%,
+    100% {
+        box-shadow: 0 0 0 rgba(37, 211, 102, 0);
+    }
+
+    50% {
+        box-shadow:
+            0 0 35px rgba(37, 211, 102, 0.12),
+            0 0 70px rgba(37, 211, 102, 0.06);
+    }
+}
+
+@keyframes abuRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =========================================================
+   SERVICE / GENERAL CARDS
+========================================================= */
+
+.abu-card {
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+
+    transition:
+        transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.35s ease,
+        box-shadow 0.35s ease;
+}
+
+.abu-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background:
+        radial-gradient(
+            circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+            rgba(37, 211, 102, 0.12),
+            transparent 35%
+        );
+
+    opacity: 0;
+    transition: opacity 0.4s ease;
+
+    pointer-events: none;
+}
+
+.abu-card:hover {
+    transform:
+        translateY(-8px)
+        perspective(1000px)
+        rotateX(1deg)
+        rotateY(-1deg);
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.25),
+        0 0 30px rgba(37, 211, 102, 0.05);
+}
+
+.abu-card:hover::before {
+    opacity: 1;
+}
+
+/* =========================================================
+   SHIMMER LINE
+========================================================= */
+
+.abu-shimmer {
+    animation: abuShimmer 1.8s ease-in-out infinite;
+}
+
+/* =========================================================
+   FLOAT
+========================================================= */
+
+.abu-float {
+    animation: abuFloat 4s ease-in-out infinite;
+}
+
+.abu-float-reverse {
+    animation: abuFloatReverse 4.5s ease-in-out infinite;
+}
+
+/* =========================================================
+   GLOW
+========================================================= */
+
+.abu-pulse {
+    animation: abuPulseGlow 3s ease-in-out infinite;
+}
+
+/* =========================================================
+   ROTATION
+========================================================= */
+
+.abu-rotate {
+    animation: abuRotate 18s linear infinite;
+}
+
+/* =========================================================
+   IMAGE HOVER
+========================================================= */
+
+.abu-image {
+    transition:
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.5s ease;
+}
+
+.group:hover .abu-image {
+    transform: scale(1.08);
+}
+
+
+body {
+  font-family: var(--font-primary);
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+}
