@@ -287,208 +287,102 @@ export default function EditLanding() {
 
 
 
-    const handleHeroUpload = async () => {
-        if (!heroFile) {
-            setError("Please select a hero image first.");
-            return;
-        }
 
-        try {
-            setHeroUploading(true);
-            setError("");
-            setSuccess("");
+const handleHeroUpload = async () => {
+    if (!heroFile) {
+        setError("Please select a hero image first.");
+        return;
+    }
 
-            // =====================================================
-            // 1. Get old image information
-            // =====================================================
+    try {
+        setHeroUploading(true);
+        setError("");
+        setSuccess("");
 
-            const oldImage =
-                form?.hero?.image || {};
+        // Get old image publicId
+        const oldPublicId =
+            form?.hero?.image?.publicId || "";
 
-            let oldPublicId =
-                oldImage?.publicId || "";
+        // Upload new image first
+        const uploaded =
+            await uploadToCloudinary(heroFile);
 
-            // =====================================================
-            // 2. If publicId is missing, extract it from imageUrl
-            // =====================================================
+        // Create updated hero
+        const updatedHero = {
+            ...form.hero,
+            image: {
+                ...form.hero.image,
+                imageUrl: uploaded.imageUrl,
+                publicId: uploaded.publicId,
+            },
+        };
 
-            if (
-                !oldPublicId &&
-                oldImage?.imageUrl
-            ) {
-                try {
-                    const imageUrl =
-                        oldImage.imageUrl;
+        // Save new image to Firestore first
+        await saveLandingPage({
+            hero: updatedHero,
+            services: form.services,
+            featuredCars: form.featuredCars,
+            gallery: form.gallery,
+        });
 
-                    const uploadIndex =
-                        imageUrl.indexOf("/upload/");
+        // Update local state
+        setForm((prev) => ({
+            ...prev,
+            hero: updatedHero,
+        }));
 
-                    if (uploadIndex !== -1) {
-                        let imagePath =
-                            imageUrl.substring(
-                                uploadIndex + 8
-                            );
+        setHeroFile(null);
 
-                        // Remove Cloudinary transformations
-                        const pathParts =
-                            imagePath.split("/");
-
-                        if (
-                            pathParts[0]?.startsWith("v") &&
-                            /^v\d+$/.test(pathParts[0])
-                        ) {
-                            pathParts.shift();
-                        }
-
-                        imagePath =
-                            pathParts.join("/");
-
-                        // Remove file extension
-                        imagePath =
-                            imagePath.replace(
-                                /\.[^/.]+$/,
-                                ""
-                            );
-
-                        oldPublicId = imagePath;
-                    }
-                } catch (extractError) {
-                    console.error(
-                        "Failed to extract old Cloudinary publicId:",
-                        extractError
+        // Delete old image AFTER successful Firestore save
+        if (
+            oldPublicId &&
+            oldPublicId !== uploaded.publicId
+        ) {
+            try {
+                const deleteResult =
+                    await deleteFromCloudinary(
+                        oldPublicId
                     );
-                }
-            }
 
-            console.log(
-                "OLD HERO PUBLIC ID:",
-                oldPublicId
-            );
-
-            // =====================================================
-            // 3. Upload new image
-            // =====================================================
-
-            const uploaded =
-                await uploadToCloudinary(heroFile);
-
-            console.log(
-                "NEW HERO IMAGE:",
-                uploaded
-            );
-
-            // =====================================================
-            // 4. Create updated hero
-            // =====================================================
-
-            const updatedHero = {
-                ...form.hero,
-
-                image: {
-                    ...form.hero.image,
-
-                    imageUrl:
-                        uploaded.imageUrl,
-
-                    publicId:
-                        uploaded.publicId,
-                },
-            };
-
-            // =====================================================
-            // 5. Save new image to Firestore FIRST
-            // =====================================================
-
-            await saveLandingPage({
-                hero: updatedHero,
-
-                services:
-                    form.services,
-
-                featuredCars:
-                    form.featuredCars,
-
-                gallery:
-                    form.gallery,
-            });
-
-            // =====================================================
-            // 6. Update local state
-            // =====================================================
-
-            setForm((prev) => ({
-                ...prev,
-
-                hero: updatedHero,
-            }));
-
-            setHeroFile(null);
-
-            // =====================================================
-            // 7. Delete old Cloudinary image
-            // =====================================================
-
-            if (
-                oldPublicId &&
-                oldPublicId !== uploaded.publicId
-            ) {
                 console.log(
-                    "Deleting OLD HERO image:",
-                    oldPublicId
+                    "Old hero image deleted:",
+                    deleteResult
+                );
+            } catch (deleteError) {
+                console.error(
+                    "Old hero image deletion failed:",
+                    deleteError
                 );
 
-                try {
-                    const deleteResult =
-                        await deleteFromCloudinary(
-                            oldPublicId
-                        );
-
-                    console.log(
-                        "OLD HERO DELETE RESULT:",
-                        deleteResult
-                    );
-
-                } catch (deleteError) {
-                    console.error(
-                        "OLD HERO DELETE ERROR:",
-                        deleteError
-                    );
-
-                    setError(
-                        "The new hero image was saved, but the old image could not be deleted."
-                    );
-
-                    return;
-                }
-            } else {
-                console.warn(
-                    "No old Cloudinary publicId found. Old image was not deleted."
+                setError(
+                    "New hero image was saved, but the old image could not be deleted."
                 );
+
+                return;
             }
-
-            // =====================================================
-            // 8. Success
-            // =====================================================
-
-            setSuccess(
-                "Hero image updated successfully."
-            );
-
-        } catch (error) {
-            console.error(
-                "Hero upload error:",
-                error
-            );
-
-            setError(
-                error?.message ||
-                "Failed to upload hero image."
-            );
-
-        } finally {
-            setHeroUploading(false);
         }
-    };
+
+        setSuccess(
+            "Hero image updated successfully."
+        );
+
+    } catch (error) {
+        console.error(
+            "Hero upload error:",
+            error
+        );
+
+        setError(
+            error?.message ||
+            "Failed to upload hero image."
+        );
+
+    } finally {
+        setHeroUploading(false);
+    }
+};
+
+
 
 
 
