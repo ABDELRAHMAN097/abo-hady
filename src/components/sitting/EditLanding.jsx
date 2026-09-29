@@ -285,109 +285,214 @@ export default function EditLanding() {
        UPLOAD HERO IMAGE
     ========================================================= */
 
+
+
     const handleHeroUpload = async () => {
         if (!heroFile) {
-            setError(
-                "Please select a hero image first."
-            );
-
+            setError("Please select a hero image first.");
             return;
         }
 
         try {
             setHeroUploading(true);
-
             setError("");
             setSuccess("");
 
-            /* =====================================================
-               SAVE OLD PUBLIC ID
-            ===================================================== */
+            // =====================================================
+            // 1. Get old image information
+            // =====================================================
 
-            const oldPublicId =
-                form?.hero?.image?.publicId || "";
+            const oldImage =
+                form?.hero?.image || {};
 
-            /* =====================================================
-               UPLOAD NEW IMAGE FIRST
-            ===================================================== */
+            let oldPublicId =
+                oldImage?.publicId || "";
+
+            // =====================================================
+            // 2. If publicId is missing, extract it from imageUrl
+            // =====================================================
+
+            if (
+                !oldPublicId &&
+                oldImage?.imageUrl
+            ) {
+                try {
+                    const imageUrl =
+                        oldImage.imageUrl;
+
+                    const uploadIndex =
+                        imageUrl.indexOf("/upload/");
+
+                    if (uploadIndex !== -1) {
+                        let imagePath =
+                            imageUrl.substring(
+                                uploadIndex + 8
+                            );
+
+                        // Remove Cloudinary transformations
+                        const pathParts =
+                            imagePath.split("/");
+
+                        if (
+                            pathParts[0]?.startsWith("v") &&
+                            /^v\d+$/.test(pathParts[0])
+                        ) {
+                            pathParts.shift();
+                        }
+
+                        imagePath =
+                            pathParts.join("/");
+
+                        // Remove file extension
+                        imagePath =
+                            imagePath.replace(
+                                /\.[^/.]+$/,
+                                ""
+                            );
+
+                        oldPublicId = imagePath;
+                    }
+                } catch (extractError) {
+                    console.error(
+                        "Failed to extract old Cloudinary publicId:",
+                        extractError
+                    );
+                }
+            }
+
+            console.log(
+                "OLD HERO PUBLIC ID:",
+                oldPublicId
+            );
+
+            // =====================================================
+            // 3. Upload new image
+            // =====================================================
 
             const uploaded =
-                await uploadToCloudinary(
-                    heroFile
-                );
+                await uploadToCloudinary(heroFile);
 
-            /* =====================================================
-               UPDATE FORM WITH NEW IMAGE
-            ===================================================== */
+            console.log(
+                "NEW HERO IMAGE:",
+                uploaded
+            );
+
+            // =====================================================
+            // 4. Create updated hero
+            // =====================================================
+
+            const updatedHero = {
+                ...form.hero,
+
+                image: {
+                    ...form.hero.image,
+
+                    imageUrl:
+                        uploaded.imageUrl,
+
+                    publicId:
+                        uploaded.publicId,
+                },
+            };
+
+            // =====================================================
+            // 5. Save new image to Firestore FIRST
+            // =====================================================
+
+            await saveLandingPage({
+                hero: updatedHero,
+
+                services:
+                    form.services,
+
+                featuredCars:
+                    form.featuredCars,
+
+                gallery:
+                    form.gallery,
+            });
+
+            // =====================================================
+            // 6. Update local state
+            // =====================================================
 
             setForm((prev) => ({
                 ...prev,
 
-                hero: {
-                    ...prev.hero,
-
-                    image: {
-                        ...prev.hero.image,
-
-                        imageUrl:
-                            uploaded.imageUrl,
-
-                        publicId:
-                            uploaded.publicId,
-                    },
-                },
+                hero: updatedHero,
             }));
 
             setHeroFile(null);
 
-            /* =====================================================
-               DELETE OLD IMAGE
-            ===================================================== */
+            // =====================================================
+            // 7. Delete old Cloudinary image
+            // =====================================================
 
             if (
                 oldPublicId &&
-                oldPublicId !==
-                uploaded.publicId
+                oldPublicId !== uploaded.publicId
             ) {
+                console.log(
+                    "Deleting OLD HERO image:",
+                    oldPublicId
+                );
+
                 try {
-                    await deleteFromCloudinary(
-                        oldPublicId
+                    const deleteResult =
+                        await deleteFromCloudinary(
+                            oldPublicId
+                        );
+
+                    console.log(
+                        "OLD HERO DELETE RESULT:",
+                        deleteResult
                     );
+
                 } catch (deleteError) {
                     console.error(
-                        "Old hero image deletion failed:",
+                        "OLD HERO DELETE ERROR:",
                         deleteError
                     );
 
                     setError(
-                        "New hero image uploaded successfully, but the old image could not be deleted."
+                        "The new hero image was saved, but the old image could not be deleted."
                     );
 
                     return;
                 }
+            } else {
+                console.warn(
+                    "No old Cloudinary publicId found. Old image was not deleted."
+                );
             }
 
-            /* =====================================================
-               SUCCESS
-            ===================================================== */
+            // =====================================================
+            // 8. Success
+            // =====================================================
 
             setSuccess(
-                "Hero image uploaded successfully and the old image was deleted."
+                "Hero image updated successfully."
             );
-        } catch (err) {
+
+        } catch (error) {
             console.error(
                 "Hero upload error:",
-                err
+                error
             );
 
             setError(
-                err.message ||
+                error?.message ||
                 "Failed to upload hero image."
             );
+
         } finally {
             setHeroUploading(false);
         }
     };
+
+
+
+
 
     /* =========================================================
        REMOVE HERO IMAGE (DELETES FROM CLOUDINARY)

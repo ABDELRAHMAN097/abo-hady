@@ -1,0 +1,23 @@
+[2026-09-26T12:20:40.542Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[2026-09-26T12:20:40.549Z] > authorizing via signed-in user (bodymagdy097@gmail.com)
+[2026-09-26T12:20:40.550Z] [iam] checking project login-system-e88bf for permissions ["cloudfunctions.functions.list","firebase.projects.get"]
+[2026-09-26T12:20:40.555Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:40.557Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:40.561Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/login-system-e88bf:testIamPermissions [none]
+[2026-09-26T12:20:40.562Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/login-system-e88bf:testIamPermissions x-goog-quota-user=projects/login-system-e88bf
+[2026-09-26T12:20:40.563Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/login-system-e88bf:testIamPermissions {"permissions":["cloudfunctions.functions.list","firebase.projects.get"]}
+[2026-09-26T12:20:41.976Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/login-system-e88bf:testIamPermissions 200
+[2026-09-26T12:20:41.977Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/login-system-e88bf:testIamPermissions {"permissions":["cloudfunctions.functions.list","firebase.projects.get"]}
+[2026-09-26T12:20:41.979Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:41.980Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:41.980Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/login-system-e88bf/locations/-/functions [none]
+[2026-09-26T12:20:43.200Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/login-system-e88bf/locations/-/functions 200
+[2026-09-26T12:20:43.201Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/login-system-e88bf/locations/-/functions {}
+[2026-09-26T12:20:43.203Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:43.204Z] Checked if tokens are valid: true, expires at: 1790428311134
+[2026-09-26T12:20:43.206Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/login-system-e88bf/locations/-/functions filter=environment%3D%22GEN_2%22
+[2026-09-26T12:20:44.310Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/login-system-e88bf/locations/-/functions 200
+[2026-09-26T12:20:44.311Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/login-system-e88bf/locations/-/functions {}
+┌──────────┬─────────┬─────────┬──────────┬────────┬─────────┐
+│ Function │ Version │ Trigger │ Location │ Memory │ Runtime │
+└──────────┴─────────┴─────────┴──────────┴────────┴─────────┘

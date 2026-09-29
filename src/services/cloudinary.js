@@ -1,11 +1,3 @@
-
-import {
-    getFunctions,
-    httpsCallable,
-} from "firebase/functions";
-
-import app from "@/config/firebase";
-
 /* =========================================================
    CLOUDINARY CONFIG
 ========================================================= */
@@ -88,21 +80,29 @@ export const deleteFromCloudinary = async (
     }
 
     try {
-        const functions = getFunctions(
-            app,
-            "us-central1"
+        const response = await fetch(
+            "/api/delete-image",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    publicId,
+                }),
+            }
         );
 
-        const deleteImage = httpsCallable(
-            functions,
-            "deleteCloudinaryImage"
-        );
+        const data = await response.json();
 
-        const result = await deleteImage({
-            publicId,
-        });
+        if (!response.ok) {
+            throw new Error(
+                data?.message ||
+                    "Failed to delete Cloudinary image"
+            );
+        }
 
-        return result.data;
+        return data;
     } catch (error) {
         console.error(
             "Cloudinary delete error:",

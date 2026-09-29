@@ -22,7 +22,7 @@ export const menuItems = [
     allowedRoles: ["admin", "super_admin"],
   },
   {
-    name: "EditLanding",
+    name: "انشاء عربيه",
     path: "/EditLanding",
     icon: HiOutlineUsers,
     allowedRoles: ["admin", "super_admin"],
@@ -42,7 +42,7 @@ export const menuItems = [
     allowedRoles: ["admin", "super_admin"],
   },
   {
-    name: "Reports",
+    name: "تتتت",
     path: "/reports",
     icon: TbFileText,
     allowedRoles: ["admin", "super_admin"],

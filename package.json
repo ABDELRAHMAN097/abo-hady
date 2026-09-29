@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "axios": "^1.19.0",
+    "cloudinary": "^2.11.0",
     "firebase": "^12.19.0",
     "formik": "^2.4.9",
     "framer-motion": "^13.1.0",
