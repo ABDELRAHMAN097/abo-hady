@@ -19,7 +19,6 @@ const cloudinary =
 ========================================================= */
 
 initializeApp();
-
 const db = getFirestore();
 
 /* =========================================================
@@ -216,4 +215,4 @@ exports.deleteHeroImage = onCall(
     }
 );
 
-exports.deleteCloudinaryImage = exports.deleteHeroImage;
+exports.deleteCloudinaryImage = exports.deleteHeroImage;

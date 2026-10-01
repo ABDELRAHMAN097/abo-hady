@@ -1,15 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || "dtdpkfkw2").trim(),
+  api_key: (process.env.CLOUDINARY_API_KEY || "181285968731254").trim(),
+  api_secret: (process.env.CLOUDINARY_API_SECRET || "TJTUTGw2KkiFiwpGdC9duIOxIBs").trim(),
 });
-console.log({
-    hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-    hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-    hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
-});
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -19,7 +15,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { publicId } = req.body;
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const { publicId } = body || {};
 
     if (!publicId) {
       return res.status(400).json({
@@ -36,18 +33,13 @@ export default async function handler(req, res) {
       success: true,
       result,
     });
-  }
-   catch (error) {
-    console.error(
-        "Cloudinary delete error:",
-        error
-    );
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
 
     return res.status(500).json({
-        success: false,
-        message:
-            error?.message ||
-            "Failed to delete image",
-        error,
-    })};
+      success: false,
+      message: error?.message || "Failed to delete image",
+      error,
+    });
+  }
 }

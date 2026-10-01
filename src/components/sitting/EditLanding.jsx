@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-
-import { uploadToCloudinary, deleteFromCloudinary } from "@/services/cloudinary";
-
-
+import {
+    uploadToCloudinary,
+    deleteFromCloudinary,
+    getPublicIdFromUrl,
+} from "@/services/cloudinary";
 import {
     getLandingPage,
     saveLandingPage,
@@ -164,30 +165,30 @@ export default function EditLanding() {
                     services: {
                         ar: {
                             eyebrow:
-                                data.services?.ar?.eyebrow ||
-                                "",
+                                data.services?.ar
+                                    ?.eyebrow || "",
 
                             title:
-                                data.services?.ar?.title ||
-                                "",
+                                data.services?.ar
+                                    ?.title || "",
 
                             description:
-                                data.services?.ar?.description ||
-                                "",
+                                data.services?.ar
+                                    ?.description || "",
                         },
 
                         en: {
                             eyebrow:
-                                data.services?.en?.eyebrow ||
-                                "",
+                                data.services?.en
+                                    ?.eyebrow || "",
 
                             title:
-                                data.services?.en?.title ||
-                                "",
+                                data.services?.en
+                                    ?.title || "",
 
                             description:
-                                data.services?.en?.description ||
-                                "",
+                                data.services?.en
+                                    ?.description || "",
                         },
 
                         cards:
@@ -213,7 +214,7 @@ export default function EditLanding() {
 
                 setError(
                     err.message ||
-                    "Failed to load landing page."
+                        "Failed to load landing page."
                 );
             } finally {
                 setLoading(false);
@@ -285,10 +286,7 @@ export default function EditLanding() {
        UPLOAD HERO IMAGE
     ========================================================= */
 
-
-
-
-const handleHeroUpload = async () => {
+ const handleHeroUpload = async () => {
     if (!heroFile) {
         setError("Please select a hero image first.");
         return;
@@ -299,45 +297,78 @@ const handleHeroUpload = async () => {
         setError("");
         setSuccess("");
 
-        // Get old image publicId
-        const oldPublicId =
-            form?.hero?.image?.publicId || "";
+        /* =====================================================
+           SAVE OLD PUBLIC ID
+        ===================================================== */
 
-        // Upload new image first
+        const oldPublicId =
+            form?.hero?.image?.publicId ||
+            getPublicIdFromUrl(form?.hero?.image?.imageUrl) ||
+            "";
+
+        console.log(
+            "Old hero public ID:",
+            oldPublicId
+        );
+
+        /* =====================================================
+           UPLOAD NEW IMAGE
+        ===================================================== */
+
+        console.log("Starting hero upload...");
+
         const uploaded =
             await uploadToCloudinary(heroFile);
 
-        // Create updated hero
-        const updatedHero = {
-            ...form.hero,
-            image: {
-                ...form.hero.image,
-                imageUrl: uploaded.imageUrl,
-                publicId: uploaded.publicId,
-            },
-        };
+        console.log(
+            "New hero image uploaded:",
+            uploaded
+        );
 
-        // Save new image to Firestore first
-        await saveLandingPage({
-            hero: updatedHero,
-            services: form.services,
-            featuredCars: form.featuredCars,
-            gallery: form.gallery,
-        });
+        if (!uploaded?.imageUrl) {
+            throw new Error(
+                "Cloudinary did not return an image URL."
+            );
+        }
 
-        // Update local state
+        /* =====================================================
+           UPDATE LOCAL FORM
+           This changes the preview immediately
+        ===================================================== */
+
         setForm((prev) => ({
             ...prev,
-            hero: updatedHero,
+
+            hero: {
+                ...prev.hero,
+
+                image: {
+                    ...prev.hero.image,
+
+                    imageUrl:
+                        uploaded.imageUrl,
+
+                    publicId:
+                        uploaded.publicId || "",
+                },
+            },
         }));
 
         setHeroFile(null);
 
-        // Delete old image AFTER successful Firestore save
+        /* =====================================================
+           DELETE OLD IMAGE
+        ===================================================== */
+
         if (
             oldPublicId &&
             oldPublicId !== uploaded.publicId
         ) {
+            console.log(
+                "Deleting old hero image:",
+                oldPublicId
+            );
+
             try {
                 const deleteResult =
                     await deleteFromCloudinary(
@@ -355,49 +386,49 @@ const handleHeroUpload = async () => {
                 );
 
                 setError(
-                    "New hero image was saved, but the old image could not be deleted."
+                    "New hero image uploaded successfully, but the old image could not be deleted."
                 );
 
                 return;
             }
         }
 
-        setSuccess(
-            "Hero image updated successfully."
-        );
+        /* =====================================================
+           SUCCESS
+        ===================================================== */
 
-    } catch (error) {
+        setSuccess(
+            "Hero image uploaded successfully and the old image was deleted."
+        );
+    } catch (err) {
         console.error(
             "Hero upload error:",
-            error
+            err
         );
 
         setError(
-            error?.message ||
-            "Failed to upload hero image."
+            err?.message ||
+                "Failed to upload hero image."
         );
-
     } finally {
         setHeroUploading(false);
     }
 };
-
-
-
-
-
-
-
     /* =========================================================
-       REMOVE HERO IMAGE (DELETES FROM CLOUDINARY)
+       REMOVE HERO IMAGE
+       (DELETES FROM CLOUDINARY)
     ========================================================= */
 
     const handleHeroRemove = async () => {
-        const oldPublicId = form?.hero?.image?.publicId;
+        const oldPublicId =
+            form?.hero?.image?.publicId ||
+            getPublicIdFromUrl(form?.hero?.image?.imageUrl);
 
         if (oldPublicId) {
             try {
-                await deleteFromCloudinary(oldPublicId);
+                await deleteFromCloudinary(
+                    oldPublicId
+                );
             } catch (deleteError) {
                 console.warn(
                     "Old hero image deletion failed:",
@@ -408,8 +439,10 @@ const handleHeroUpload = async () => {
 
         setForm((prev) => ({
             ...prev,
+
             hero: {
                 ...prev.hero,
+
                 image: {
                     imageUrl: "",
                     publicId: "",
@@ -419,15 +452,19 @@ const handleHeroUpload = async () => {
         }));
 
         setHeroFile(null);
-        setSuccess("Hero image removed successfully from Cloudinary.");
+
+        setSuccess(
+            "Hero image removed successfully from Cloudinary."
+        );
     };
 
     /* =========================================================
        SERVICE
     ========================================================= */
+
     /* =========================================================
-UPDATE SERVICES SECTION
-========================================================= */
+       UPDATE SERVICES SECTION
+    ========================================================= */
 
     const updateServicesContent = (
         language,
@@ -442,7 +479,6 @@ UPDATE SERVICES SECTION
 
                 [language]: {
                     ...prev.services[language],
-
                     [field]: value,
                 },
             },
@@ -506,12 +542,12 @@ UPDATE SERVICES SECTION
 
                     [serviceId]: {
                         ...prev.services.cards[
-                        serviceId
+                            serviceId
                         ],
 
                         [language]: {
                             ...prev.services.cards[
-                            serviceId
+                                serviceId
                             ]?.[language],
 
                             [field]: value,
@@ -541,7 +577,7 @@ UPDATE SERVICES SECTION
 
                     [serviceId]: {
                         ...prev.services.cards[
-                        serviceId
+                            serviceId
                         ],
 
                         icon: value,
@@ -643,7 +679,9 @@ UPDATE SERVICES SECTION
             setSuccess("");
 
             const oldPublicId =
-                form?.gallery?.[index]?.publicId || "";
+                form?.gallery?.[index]?.publicId ||
+                getPublicIdFromUrl(form?.gallery?.[index]?.imageUrl) ||
+                "";
 
             const uploaded =
                 await uploadToCloudinary(
@@ -706,7 +744,7 @@ UPDATE SERVICES SECTION
 
             setError(
                 err.message ||
-                "Failed to upload gallery image."
+                    "Failed to upload gallery image."
             );
         } finally {
             setGalleryUploading(null);
@@ -743,14 +781,21 @@ UPDATE SERVICES SECTION
        DELETE GALLERY IMAGE
     ========================================================= */
 
-    const removeGalleryImage = async (index) => {
+    const removeGalleryImage = async (
+        index
+    ) => {
         const item = form?.gallery?.[index];
-        const oldPublicId = item?.publicId;
+
+        const oldPublicId =
+            item?.publicId ||
+            getPublicIdFromUrl(item?.imageUrl);
 
         // Delete from Cloudinary to preserve storage space
         if (oldPublicId) {
             try {
-                await deleteFromCloudinary(oldPublicId);
+                await deleteFromCloudinary(
+                    oldPublicId
+                );
             } catch (deleteError) {
                 console.warn(
                     "Failed to delete removed gallery image from Cloudinary:",
@@ -814,7 +859,7 @@ UPDATE SERVICES SECTION
 
             setError(
                 err.message ||
-                "Failed to save landing page."
+                    "Failed to save landing page."
             );
         } finally {
             setSaving(false);
@@ -1351,7 +1396,7 @@ UPDATE SERVICES SECTION
 
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+                            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
 
                                 <button
                                     type="button"
@@ -1411,14 +1456,12 @@ UPDATE SERVICES SECTION
                     </section>
 
                     {/* =================================================
-    SERVICES
-================================================= */}
+                        SERVICES
+                    ================================================= */}
 
                     <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
 
-                        {/* =================================================
-        HEADER
-    ================================================= */}
+                        {/* HEADER */}
 
                         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -1443,15 +1486,11 @@ UPDATE SERVICES SECTION
 
                         </div>
 
-                        {/* =================================================
-        SECTION CONTENT
-    ================================================= */}
+                        {/* SECTION CONTENT */}
 
                         <div className="grid gap-6 xl:grid-cols-2">
 
-                            {/* =================================================
-            ARABIC SECTION CONTENT
-        ================================================= */}
+                            {/* ARABIC SECTION CONTENT */}
 
                             <div
                                 dir="rtl"
@@ -1551,12 +1590,9 @@ UPDATE SERVICES SECTION
                                     </div>
 
                                 </div>
-
                             </div>
 
-                            {/* =================================================
-            ENGLISH SECTION CONTENT
-        ================================================= */}
+                            {/* ENGLISH SECTION CONTENT */}
 
                             <div
                                 dir="ltr"
@@ -1656,14 +1692,11 @@ UPDATE SERVICES SECTION
                                     </div>
 
                                 </div>
-
                             </div>
 
                         </div>
 
-                        {/* =================================================
-        SERVICE CARDS
-    ================================================= */}
+                        {/* SERVICE CARDS */}
 
                         <div className="mt-8">
 
@@ -1681,7 +1714,9 @@ UPDATE SERVICES SECTION
 
                             {/* EMPTY */}
 
-                            {Object.keys(form.services.cards || {}).length === 0 ? (
+                            {Object.keys(
+                                form.services.cards || {}
+                            ).length === 0 ? (
 
                                 <div className="rounded-xl border border-dashed border-border bg-background p-8 text-center">
 
@@ -1701,269 +1736,262 @@ UPDATE SERVICES SECTION
 
                                     {Object.values(
                                         form.services.cards || {}
-                                    ).map((service, index) => (
+                                    ).map(
+                                        (
+                                            service,
+                                            index
+                                        ) => (
 
-                                        <div
-                                            key={
-                                                service.id ||
-                                                index
-                                            }
-                                            className="rounded-2xl border border-border bg-background p-5"
-                                        >
+                                            <div
+                                                key={
+                                                    service.id ||
+                                                    index
+                                                }
+                                                className="rounded-2xl border border-border bg-background p-5"
+                                            >
 
-                                            {/* =================================================
-                            CARD HEADER
-                        ================================================= */}
+                                                {/* CARD HEADER */}
 
-                                            <div className="mb-6 flex items-center justify-between gap-4">
+                                                <div className="mb-6 flex items-center justify-between gap-4">
 
-                                                <div>
+                                                    <div>
 
-                                                    <h4 className="font-semibold text-text-primary">
-                                                        Service #{index + 1}
-                                                    </h4>
+                                                        <h4 className="font-semibold text-text-primary">
+                                                            Service #{index + 1}
+                                                        </h4>
 
-                                                    <p className="mt-1 text-xs text-text-muted">
-                                                        ID: {service.id}
-                                                    </p>
+                                                        <p className="mt-1 text-xs text-text-muted">
+                                                            ID: {service.id}
+                                                        </p>
+
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            removeService(
+                                                                service.id
+                                                            )
+                                                        }
+                                                        className="rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+                                                    >
+                                                        Remove
+                                                    </button>
 
                                                 </div>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeService(
-                                                            service.id
-                                                        )
-                                                    }
-                                                    className="rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
-                                                >
-                                                    Remove
-                                                </button>
+                                                {/* ICON */}
 
-                                            </div>
+                                                <div className="mb-6">
 
-                                            {/* =================================================
-                            ICON
-                        ================================================= */}
+                                                    <label className="mb-2 block text-sm font-medium text-text-primary">
+                                                        Icon
+                                                    </label>
 
-                                            <div className="mb-6">
+                                                    <select
+                                                        value={
+                                                            service.icon ||
+                                                            "car"
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateServiceIcon(
+                                                                service.id,
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        className="w-full rounded-xl border border-border bg-card px-4 py-3 text-text-primary outline-none focus:border-accent"
+                                                    >
 
-                                                <label className="mb-2 block text-sm font-medium text-text-primary">
-                                                    Icon
-                                                </label>
+                                                        <option value="car">
+                                                            Car
+                                                        </option>
 
-                                                <select
-                                                    value={
-                                                        service.icon ||
-                                                        "car"
-                                                    }
-                                                    onChange={(e) =>
-                                                        updateServiceIcon(
-                                                            service.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="w-full rounded-xl border border-border bg-card px-4 py-3 text-text-primary outline-none focus:border-accent"
-                                                >
+                                                        <option value="driver">
+                                                            Driver
+                                                        </option>
 
-                                                    <option value="car">
-                                                        Car
-                                                    </option>
+                                                        <option value="airport">
+                                                            Airport
+                                                        </option>
 
-                                                    <option value="driver">
-                                                        Driver
-                                                    </option>
+                                                        <option value="security">
+                                                            Security
+                                                        </option>
 
-                                                    <option value="airport">
-                                                        Airport
-                                                    </option>
-
-                                                    <option value="security">
-                                                        Security
-                                                    </option>
-
-                                                </select>
-
-                                            </div>
-
-                                            {/* =================================================
-                            LANGUAGES
-                        ================================================= */}
-
-                                            <div className="grid gap-6 xl:grid-cols-2">
-
-                                                {/* =================================================
-                                ARABIC
-                            ================================================= */}
-
-                                                <div
-                                                    dir="rtl"
-                                                    className="rounded-2xl border border-border bg-card p-5"
-                                                >
-
-                                                    <div className="mb-5 flex items-center justify-between">
-
-                                                        <h5 className="font-bold text-text-primary">
-                                                            العربية
-                                                        </h5>
-
-                                                        <span className="rounded-lg bg-primary-color/10 px-3 py-1 text-xs font-semibold text-primary-color">
-                                                            AR
-                                                        </span>
-
-                                                    </div>
-
-                                                    <div className="space-y-5">
-
-                                                        {/* TITLE */}
-
-                                                        <div>
-
-                                                            <label className="mb-2 block text-sm font-medium text-text-primary">
-                                                                العنوان
-                                                            </label>
-
-                                                            <input
-                                                                type="text"
-                                                                value={
-                                                                    service.ar?.title ||
-                                                                    ""
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateService(
-                                                                        service.id,
-                                                                        "ar",
-                                                                        "title",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                placeholder="تأجير السيارات الفاخرة"
-                                                                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
-                                                            />
-
-                                                        </div>
-
-                                                        {/* DESCRIPTION */}
-
-                                                        <div>
-
-                                                            <label className="mb-2 block text-sm font-medium text-text-primary">
-                                                                الوصف
-                                                            </label>
-
-                                                            <textarea
-                                                                rows={4}
-                                                                value={
-                                                                    service.ar?.description ||
-                                                                    ""
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateService(
-                                                                        service.id,
-                                                                        "ar",
-                                                                        "description",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                placeholder="وصف الخدمة..."
-                                                                className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 leading-7 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
-                                                            />
-
-                                                        </div>
-
-                                                    </div>
+                                                    </select>
 
                                                 </div>
 
-                                                {/* =================================================
-                                ENGLISH
-                            ================================================= */}
+                                                {/* LANGUAGES */}
 
-                                                <div
-                                                    dir="ltr"
-                                                    className="rounded-2xl border border-border bg-card p-5"
-                                                >
+                                                <div className="grid gap-6 xl:grid-cols-2">
 
-                                                    <div className="mb-5 flex items-center justify-between">
+                                                    {/* ARABIC */}
 
-                                                        <h5 className="font-bold text-text-primary">
-                                                            English
-                                                        </h5>
+                                                    <div
+                                                        dir="rtl"
+                                                        className="rounded-2xl border border-border bg-card p-5"
+                                                    >
 
-                                                        <span className="rounded-lg bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
-                                                            EN
-                                                        </span>
+                                                        <div className="mb-5 flex items-center justify-between">
 
+                                                            <h5 className="font-bold text-text-primary">
+                                                                العربية
+                                                            </h5>
+
+                                                            <span className="rounded-lg bg-primary-color/10 px-3 py-1 text-xs font-semibold text-primary-color">
+                                                                AR
+                                                            </span>
+
+                                                        </div>
+
+                                                        <div className="space-y-5">
+
+                                                            {/* TITLE */}
+
+                                                            <div>
+
+                                                                <label className="mb-2 block text-sm font-medium text-text-primary">
+                                                                    العنوان
+                                                                </label>
+
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        service.ar?.title ||
+                                                                        ""
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        updateService(
+                                                                            service.id,
+                                                                            "ar",
+                                                                            "title",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder="تأجير السيارات الفاخرة"
+                                                                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
+                                                                />
+
+                                                            </div>
+
+                                                            {/* DESCRIPTION */}
+
+                                                            <div>
+
+                                                                <label className="mb-2 block text-sm font-medium text-text-primary">
+                                                                    الوصف
+                                                                </label>
+
+                                                                <textarea
+                                                                    rows={4}
+                                                                    value={
+                                                                        service.ar?.description ||
+                                                                        ""
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        updateService(
+                                                                            service.id,
+                                                                            "ar",
+                                                                            "description",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder="وصف الخدمة..."
+                                                                    className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 leading-7 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
+                                                                />
+
+                                                            </div>
+
+                                                        </div>
                                                     </div>
 
-                                                    <div className="space-y-5">
+                                                    {/* ENGLISH */}
 
-                                                        {/* TITLE */}
+                                                    <div
+                                                        dir="ltr"
+                                                        className="rounded-2xl border border-border bg-card p-5"
+                                                    >
 
-                                                        <div>
+                                                        <div className="mb-5 flex items-center justify-between">
 
-                                                            <label className="mb-2 block text-sm font-medium text-text-primary">
-                                                                Title
-                                                            </label>
+                                                            <h5 className="font-bold text-text-primary">
+                                                                English
+                                                            </h5>
 
-                                                            <input
-                                                                type="text"
-                                                                value={
-                                                                    service.en?.title ||
-                                                                    ""
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateService(
-                                                                        service.id,
-                                                                        "en",
-                                                                        "title",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                placeholder="Luxury Car Rental"
-                                                                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
-                                                            />
+                                                            <span className="rounded-lg bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+                                                                EN
+                                                            </span>
 
                                                         </div>
 
-                                                        {/* DESCRIPTION */}
+                                                        <div className="space-y-5">
 
-                                                        <div>
+                                                            {/* TITLE */}
 
-                                                            <label className="mb-2 block text-sm font-medium text-text-primary">
-                                                                Description
-                                                            </label>
+                                                            <div>
 
-                                                            <textarea
-                                                                rows={4}
-                                                                value={
-                                                                    service.en?.description ||
-                                                                    ""
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateService(
-                                                                        service.id,
-                                                                        "en",
-                                                                        "description",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                placeholder="Describe this service..."
-                                                                className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 leading-7 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
-                                                            />
+                                                                <label className="mb-2 block text-sm font-medium text-text-primary">
+                                                                    Title
+                                                                </label>
+
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        service.en?.title ||
+                                                                        ""
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        updateService(
+                                                                            service.id,
+                                                                            "en",
+                                                                            "title",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder="Luxury Car Rental"
+                                                                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
+                                                                />
+
+                                                            </div>
+
+                                                            {/* DESCRIPTION */}
+
+                                                            <div>
+
+                                                                <label className="mb-2 block text-sm font-medium text-text-primary">
+                                                                    Description
+                                                                </label>
+
+                                                                <textarea
+                                                                    rows={4}
+                                                                    value={
+                                                                        service.en?.description ||
+                                                                        ""
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        updateService(
+                                                                            service.id,
+                                                                            "en",
+                                                                            "description",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder="Describe this service..."
+                                                                    className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 leading-7 text-text-primary outline-none placeholder:text-text-muted focus:border-accent"
+                                                                />
+
+                                                            </div>
 
                                                         </div>
-
                                                     </div>
 
                                                 </div>
 
                                             </div>
 
-                                        </div>
-
-                                    ))}
+                                        )
+                                    )}
 
                                 </div>
 
@@ -1973,8 +2001,6 @@ UPDATE SERVICES SECTION
 
                     </section>
 
-
-
                     {/* =================================================
                         FEATURED CARS
                     ================================================= */}
@@ -1982,6 +2008,7 @@ UPDATE SERVICES SECTION
                     <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
 
                         <div className="mb-6">
+
                             <h2 className="text-xl font-bold text-text-primary sm:text-2xl">
                                 Featured Cars
                             </h2>
@@ -1991,6 +2018,7 @@ UPDATE SERVICES SECTION
                                 be selected from the
                                 Cars Management system.
                             </p>
+
                         </div>
 
                         <div className="rounded-2xl border border-dashed border-border bg-background p-8 text-center">
@@ -2021,6 +2049,7 @@ UPDATE SERVICES SECTION
                         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                             <div>
+
                                 <h2 className="text-xl font-bold text-text-primary sm:text-2xl">
                                     Gallery
                                 </h2>
@@ -2030,6 +2059,7 @@ UPDATE SERVICES SECTION
                                     gallery images using
                                     Cloudinary.
                                 </p>
+
                             </div>
 
                             <button
@@ -2044,8 +2074,8 @@ UPDATE SERVICES SECTION
 
                         </div>
 
-                        {form.gallery.length ===
-                            0 ? (
+                        {form.gallery.length === 0 ? (
+
                             <div className="rounded-xl border border-dashed border-border bg-background p-8 text-center">
 
                                 <p className="text-text-secondary">
@@ -2054,7 +2084,9 @@ UPDATE SERVICES SECTION
                                 </p>
 
                             </div>
+
                         ) : (
+
                             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
 
                                 {form.gallery.map(
@@ -2062,6 +2094,7 @@ UPDATE SERVICES SECTION
                                         item,
                                         index
                                     ) => (
+
                                         <div
                                             key={
                                                 item.id ||
@@ -2073,6 +2106,7 @@ UPDATE SERVICES SECTION
                                             {/* IMAGE */}
 
                                             {item.imageUrl ? (
+
                                                 <img
                                                     src={
                                                         item.imageUrl
@@ -2083,7 +2117,9 @@ UPDATE SERVICES SECTION
                                                     }
                                                     className="h-52 w-full object-cover"
                                                 />
+
                                             ) : (
+
                                                 <div className="flex h-52 items-center justify-center bg-card">
 
                                                     <span className="text-sm text-text-muted">
@@ -2092,6 +2128,7 @@ UPDATE SERVICES SECTION
                                                     </span>
 
                                                 </div>
+
                                             )}
 
                                             <div className="p-5">
@@ -2105,9 +2142,7 @@ UPDATE SERVICES SECTION
                                                 <input
                                                     type="file"
                                                     accept="image/png,image/jpeg,image/webp"
-                                                    onChange={(
-                                                        e
-                                                    ) =>
+                                                    onChange={(e) =>
                                                         handleGalleryFileChange(
                                                             index,
                                                             e
@@ -2121,15 +2156,17 @@ UPDATE SERVICES SECTION
                                                 {galleryFiles[
                                                     index
                                                 ] && (
-                                                        <p className="mt-3 break-all text-xs text-text-muted">
-                                                            {
-                                                                galleryFiles[
-                                                                    index
-                                                                ]
-                                                                    .name
-                                                            }
-                                                        </p>
-                                                    )}
+
+                                                    <p className="mt-3 break-all text-xs text-text-muted">
+                                                        {
+                                                            galleryFiles[
+                                                                index
+                                                            ]
+                                                                .name
+                                                        }
+                                                    </p>
+
+                                                )}
 
                                                 {/* UPLOAD */}
 
@@ -2142,15 +2179,15 @@ UPDATE SERVICES SECTION
                                                     }
                                                     disabled={
                                                         !galleryFiles[
-                                                        index
+                                                            index
                                                         ] ||
                                                         galleryUploading ===
-                                                        index
+                                                            index
                                                     }
                                                     className="mt-4 w-full rounded-xl bg-secondary-color px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {galleryUploading ===
-                                                        index
+                                                    index
                                                         ? "Uploading..."
                                                         : "Upload to Cloudinary"}
                                                 </button>
@@ -2169,15 +2206,11 @@ UPDATE SERVICES SECTION
                                                             item.alt ||
                                                             ""
                                                         }
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             updateGalleryItem(
                                                                 index,
                                                                 "alt",
-                                                                e
-                                                                    .target
-                                                                    .value
+                                                                e.target.value
                                                             )
                                                         }
                                                         placeholder="Luxury car"
@@ -2189,6 +2222,7 @@ UPDATE SERVICES SECTION
                                                 {/* PUBLIC ID */}
 
                                                 {item.publicId && (
+
                                                     <div className="mt-4">
 
                                                         <p className="mb-2 text-xs font-medium text-text-muted">
@@ -2202,6 +2236,7 @@ UPDATE SERVICES SECTION
                                                         </p>
 
                                                     </div>
+
                                                 )}
 
                                                 {/* REMOVE */}
@@ -2219,11 +2254,14 @@ UPDATE SERVICES SECTION
                                                 </button>
 
                                             </div>
+
                                         </div>
+
                                     )
                                 )}
 
                             </div>
+
                         )}
 
                     </section>
@@ -2240,7 +2278,7 @@ UPDATE SERVICES SECTION
                                 saving ||
                                 heroUploading ||
                                 galleryUploading !==
-                                null
+                                    null
                             }
                             className="w-full rounded-xl bg-primary-color px-8 py-4 font-bold text-white shadow-lg transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         >

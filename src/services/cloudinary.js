@@ -3,10 +3,52 @@
 ========================================================= */
 
 const CLOUD_NAME =
-    import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    import.meta?.env?.VITE_CLOUDINARY_CLOUD_NAME;
 
 const UPLOAD_PRESET =
-    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+    import.meta?.env?.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+/* =========================================================
+   EXTRACT PUBLIC ID FROM CLOUDINARY URL
+========================================================= */
+
+export const getPublicIdFromUrl = (url) => {
+    if (!url || typeof url !== "string" || !url.includes("cloudinary.com")) {
+        return "";
+    }
+
+    try {
+        const splitUpload = url.split("/upload/");
+        if (splitUpload.length < 2) return "";
+        let rest = splitUpload[1];
+
+        // Handle version prefix like /v123456789/
+        const vMatch = rest.match(/(?:^|\/)v\d+\/(.+)$/);
+        if (vMatch) {
+            rest = vMatch[1];
+        } else {
+            // Remove transformation segment if present
+            const parts = rest.split("/");
+            if (parts.length > 1 && (parts[0].includes(",") || parts[0].includes("_"))) {
+                parts.shift();
+                rest = parts.join("/");
+            }
+        }
+
+        // Remove query parameters
+        rest = rest.split("?")[0];
+
+        // Remove file extension
+        const dotIdx = rest.lastIndexOf(".");
+        if (dotIdx !== -1) {
+            rest = rest.substring(0, dotIdx);
+        }
+
+        return rest;
+    } catch {
+        return "";
+    }
+};
 
 /* =========================================================
    UPLOAD IMAGE
@@ -67,16 +109,32 @@ export const uploadToCloudinary = async (file) => {
 
 /* =========================================================
    DELETE IMAGE
+   Accepts either a publicId or a Cloudinary URL
 ========================================================= */
 
 export const deleteFromCloudinary = async (
-    publicId
+    publicIdOrUrl
 ) => {
-    if (!publicId) {
+    if (!publicIdOrUrl) {
         return {
             success: true,
             skipped: true,
         };
+    }
+
+    let publicId = publicIdOrUrl;
+    if (
+        typeof publicIdOrUrl === "string" &&
+        (publicIdOrUrl.startsWith("http://") ||
+            publicIdOrUrl.startsWith("https://"))
+    ) {
+        publicId = getPublicIdFromUrl(publicIdOrUrl);
+        if (!publicId) {
+            return {
+                success: true,
+                skipped: true,
+            };
+        }
     }
 
     try {
