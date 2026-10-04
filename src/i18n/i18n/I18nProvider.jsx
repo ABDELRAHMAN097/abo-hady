@@ -11,6 +11,7 @@ import en from "./locales/en.json";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./constant";
 import { I18nContext } from "./context";
 import { ToastContainer } from "react-toastify";
+import ScrollToTop from "@/components/common/ScrollToTop";
 
 const dictionary = { ar, en };
 
@@ -122,6 +123,7 @@ const I18nProvider = () => {
     <I18nContext.Provider
       value={{ locale, dir, t, toLocalePath, switchLocale }}
     >
+      <ScrollToTop />
       <Helmet key={`${locale}:${withoutLocale}`}>
         <html lang={locale} dir={dir} />
         <title>{title}</title>

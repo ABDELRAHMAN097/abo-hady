@@ -26,6 +26,66 @@ export default defineConfig(({ mode }) => {
     "TJTUTGw2KkiFiwpGdC9duIOxIBs"
   ).trim();
 
+  const setupDeleteApi = (middlewares) => {
+    middlewares.use(async (req, res, next) => {
+      const cleanUrl = (req.url || "").split("?")[0].replace(/\/+$/, "");
+      if (cleanUrl === "/api/delete-image" && req.method === "POST") {
+        let body = "";
+        req.on("data", (chunk) => {
+          body += chunk;
+        });
+        req.on("end", async () => {
+          try {
+            const parsed = JSON.parse(body || "{}");
+            let publicId = parsed.publicId;
+
+            if (!publicId) {
+              res.statusCode = 400;
+              res.setHeader("Content-Type", "application/json");
+              res.end(
+                JSON.stringify({
+                  success: false,
+                  message: "publicId is required",
+                })
+              );
+              return;
+            }
+
+            publicId = String(publicId).trim().replace(/\.[^/.]+$/, "");
+
+            cloudinary.config({
+              cloud_name: cloudName,
+              api_key: apiKey,
+              api_secret: apiSecret,
+            });
+
+            const result = await cloudinary.uploader.destroy(publicId, {
+              resource_type: "image",
+              invalidate: true,
+            });
+
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ success: true, result }));
+          } catch (error) {
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({
+                success: false,
+                message:
+                  error?.message || "Failed to delete Cloudinary image",
+                error,
+              })
+            );
+          }
+        });
+        return;
+      }
+      next();
+    });
+  };
+
   return {
     plugins: [
       react(),
@@ -33,59 +93,10 @@ export default defineConfig(({ mode }) => {
       {
         name: "cloudinary-delete-api",
         configureServer(server) {
-          server.middlewares.use(async (req, res, next) => {
-            if (req.url === "/api/delete-image" && req.method === "POST") {
-              let body = "";
-              req.on("data", (chunk) => {
-                body += chunk;
-              });
-              req.on("end", async () => {
-                try {
-                  const parsed = JSON.parse(body || "{}");
-                  const publicId = parsed.publicId;
-
-                  if (!publicId) {
-                    res.statusCode = 400;
-                    res.setHeader("Content-Type", "application/json");
-                    res.end(
-                      JSON.stringify({
-                        success: false,
-                        message: "publicId is required",
-                      })
-                    );
-                    return;
-                  }
-
-                  cloudinary.config({
-                    cloud_name: cloudName,
-                    api_key: apiKey,
-                    api_secret: apiSecret,
-                  });
-
-                  const result = await cloudinary.uploader.destroy(publicId, {
-                    resource_type: "image",
-                  });
-
-                  res.statusCode = 200;
-                  res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({ success: true, result }));
-                } catch (error) {
-                  res.statusCode = 500;
-                  res.setHeader("Content-Type", "application/json");
-                  res.end(
-                    JSON.stringify({
-                      success: false,
-                      message:
-                        error?.message || "Failed to delete Cloudinary image",
-                      error,
-                    })
-                  );
-                }
-              });
-              return;
-            }
-            next();
-          });
+          setupDeleteApi(server.middlewares);
+        },
+        configurePreviewServer(server) {
+          setupDeleteApi(server.middlewares);
         },
       },
     ],

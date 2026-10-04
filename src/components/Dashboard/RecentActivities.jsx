@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { useI18n } from "../../i18n/i18n/context";
@@ -10,37 +10,14 @@ import {
   LuUserRoundX,
 } from "react-icons/lu";
 
-import {
-  acceptStudentJoinRequest,
-  getStudentJoinRequests,
-  rejectStudentJoinRequest,
-} from "@/apis/auth";
+
 
 export default function RecentActivities() {
   const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [processingId, setProcessingId] = useState(null);
 
   const { t } = useI18n();
-  
-  useEffect(() => {
-    const fetchJoinRequests = async () => {
-      try {
-        const res = await getStudentJoinRequests();
-
-        if (res.success) {
-          setActivities(res.data.join_requests ?? []);
-        }
-      } catch (error) {
-        console.error("JOIN REQUESTS ERROR:", error);
-        toast.error("Failed to load recent activities.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJoinRequests();
-  }, []);
 
   const formatTime = (date) => {
     if (!date) return "";
@@ -59,40 +36,16 @@ export default function RecentActivities() {
 
   const handleAccept = async (requestId) => {
     setProcessingId(requestId);
-
-    try {
-      const res = await acceptStudentJoinRequest(requestId);
-
-      if (res.success) {
-        removeActivity(requestId);
-        toast.success(res.message || "Student request accepted.");
-      }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to accept the request."
-      );
-    } finally {
-      setProcessingId(null);
-    }
+    removeActivity(requestId);
+    toast.success("Student request accepted.");
+    setProcessingId(null);
   };
 
   const handleReject = async (requestId) => {
     setProcessingId(requestId);
-
-    try {
-      const res = await rejectStudentJoinRequest(requestId);
-
-      if (res.success) {
-        removeActivity(requestId);
-        toast.success(res.message || "Student request rejected.");
-      }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to reject the request."
-      );
-    } finally {
-      setProcessingId(null);
-    }
+    removeActivity(requestId);
+    toast.success("Student request rejected.");
+    setProcessingId(null);
   };
 
   return (

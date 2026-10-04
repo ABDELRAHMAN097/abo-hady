@@ -214,7 +214,7 @@ export default function EditLanding() {
 
                 setError(
                     err.message ||
-                        "Failed to load landing page."
+                    "Failed to load landing page."
                 );
             } finally {
                 setLoading(false);
@@ -286,134 +286,167 @@ export default function EditLanding() {
        UPLOAD HERO IMAGE
     ========================================================= */
 
- const handleHeroUpload = async () => {
-    if (!heroFile) {
-        setError("Please select a hero image first.");
-        return;
-    }
-
-    try {
-        setHeroUploading(true);
-        setError("");
-        setSuccess("");
-
-        /* =====================================================
-           SAVE OLD PUBLIC ID
-        ===================================================== */
-
-        const oldPublicId =
-            form?.hero?.image?.publicId ||
-            getPublicIdFromUrl(form?.hero?.image?.imageUrl) ||
-            "";
-
-        console.log(
-            "Old hero public ID:",
-            oldPublicId
-        );
-
-        /* =====================================================
-           UPLOAD NEW IMAGE
-        ===================================================== */
-
-        console.log("Starting hero upload...");
-
-        const uploaded =
-            await uploadToCloudinary(heroFile);
-
-        console.log(
-            "New hero image uploaded:",
-            uploaded
-        );
-
-        if (!uploaded?.imageUrl) {
-            throw new Error(
-                "Cloudinary did not return an image URL."
+    const handleHeroUpload = async () => {
+        if (!heroFile) {
+            setError(
+                "Please select a hero image first."
             );
+            return;
         }
 
-        /* =====================================================
-           UPDATE LOCAL FORM
-           This changes the preview immediately
-        ===================================================== */
+        try {
+            setHeroUploading(true);
+            setError("");
+            setSuccess("");
 
-        setForm((prev) => ({
-            ...prev,
+            /* =====================================================
+               SAVE OLD IMAGE DATA
+            ===================================================== */
 
-            hero: {
-                ...prev.hero,
+            const oldPublicId =
+                form?.hero?.image?.publicId ||
+                getPublicIdFromUrl(
+                    form?.hero?.image?.imageUrl
+                ) ||
+                "";
 
-                image: {
-                    ...prev.hero.image,
-
-                    imageUrl:
-                        uploaded.imageUrl,
-
-                    publicId:
-                        uploaded.publicId || "",
-                },
-            },
-        }));
-
-        setHeroFile(null);
-
-        /* =====================================================
-           DELETE OLD IMAGE
-        ===================================================== */
-
-        if (
-            oldPublicId &&
-            oldPublicId !== uploaded.publicId
-        ) {
             console.log(
-                "Deleting old hero image:",
+                "Old hero public ID:",
                 oldPublicId
             );
 
-            try {
-                const deleteResult =
-                    await deleteFromCloudinary(
-                        oldPublicId
+
+            /* =====================================================
+               UPLOAD NEW IMAGE
+            ===================================================== */
+
+            console.log(
+                "Starting hero upload..."
+            );
+
+            const uploaded =
+                await uploadToCloudinary(
+                    heroFile
+                );
+
+            console.log(
+                "New hero image uploaded:",
+                uploaded
+            );
+
+
+            /* =====================================================
+               VALIDATE UPLOAD
+            ===================================================== */
+
+            if (
+                !uploaded?.imageUrl
+            ) {
+                throw new Error(
+                    "Cloudinary did not return an image URL."
+                );
+            }
+
+
+            /* =====================================================
+               UPDATE PREVIEW IMMEDIATELY
+            ===================================================== */
+
+            setForm((prev) => ({
+                ...prev,
+
+                hero: {
+                    ...prev.hero,
+
+                    image: {
+                        ...prev.hero.image,
+
+                        imageUrl:
+                            uploaded.imageUrl,
+
+                        publicId:
+                            uploaded.publicId || "",
+
+                        alt:
+                            prev.hero.image.alt || "",
+                    },
+                },
+            }));
+
+            setHeroFile(null);
+
+
+            /* =====================================================
+               DELETE OLD IMAGE
+            ===================================================== */
+
+            if (
+                oldPublicId &&
+                oldPublicId !==
+                uploaded.publicId
+            ) {
+                console.log(
+                    "Deleting old hero image:",
+                    oldPublicId
+                );
+
+                try {
+                    const deleteResult =
+                        await deleteFromCloudinary(
+                            oldPublicId
+                        );
+
+                    console.log(
+                        "Old hero image deleted:",
+                        deleteResult
+                    );
+                } catch (deleteError) {
+                    console.error(
+                        "Old hero image deletion failed:",
+                        deleteError
                     );
 
-                console.log(
-                    "Old hero image deleted:",
-                    deleteResult
-                );
-            } catch (deleteError) {
-                console.error(
-                    "Old hero image deletion failed:",
-                    deleteError
-                );
+                    /*
+                     * IMPORTANT:
+                     * The new image was already uploaded
+                     * and the preview was already updated.
+                     *
+                     * So we DO NOT rollback the new image.
+                     */
 
-                setError(
-                    "New hero image uploaded successfully, but the old image could not be deleted."
-                );
+                    setError(
+                        "New hero image uploaded successfully, but the old image could not be deleted."
+                    );
 
-                return;
+                    return;
+                }
             }
-        }
 
-        /* =====================================================
-           SUCCESS
-        ===================================================== */
 
-        setSuccess(
-            "Hero image uploaded successfully and the old image was deleted."
-        );
-    } catch (err) {
-        console.error(
-            "Hero upload error:",
-            err
-        );
+            /* =====================================================
+               SUCCESS
+            ===================================================== */
 
-        setError(
-            err?.message ||
+            setSuccess(
+                "Hero image uploaded successfully."
+            );
+
+        } catch (error) {
+            console.error(
+                "Hero upload error:",
+                error
+            );
+
+            setError(
+                error?.message ||
                 "Failed to upload hero image."
-        );
-    } finally {
-        setHeroUploading(false);
-    }
-};
+            );
+        } finally {
+            setHeroUploading(false);
+        }
+    };
+
+
     /* =========================================================
        REMOVE HERO IMAGE
        (DELETES FROM CLOUDINARY)
@@ -437,21 +470,35 @@ export default function EditLanding() {
             }
         }
 
+        const updatedHero = {
+            ...form.hero,
+            image: {
+                imageUrl: "",
+                publicId: "",
+                alt: "",
+            },
+        };
+
         setForm((prev) => ({
             ...prev,
-
-            hero: {
-                ...prev.hero,
-
-                image: {
-                    imageUrl: "",
-                    publicId: "",
-                    alt: "",
-                },
-            },
+            hero: updatedHero,
         }));
 
         setHeroFile(null);
+
+        try {
+            await saveLandingPage({
+                hero: updatedHero,
+                services: form.services,
+                featuredCars: form.featuredCars,
+                gallery: form.gallery,
+            });
+        } catch (saveErr) {
+            console.warn(
+                "Firestore save after hero remove warning:",
+                saveErr
+            );
+        }
 
         setSuccess(
             "Hero image removed successfully from Cloudinary."
@@ -542,12 +589,12 @@ export default function EditLanding() {
 
                     [serviceId]: {
                         ...prev.services.cards[
-                            serviceId
+                        serviceId
                         ],
 
                         [language]: {
                             ...prev.services.cards[
-                                serviceId
+                            serviceId
                             ]?.[language],
 
                             [field]: value,
@@ -577,7 +624,7 @@ export default function EditLanding() {
 
                     [serviceId]: {
                         ...prev.services.cards[
-                            serviceId
+                        serviceId
                         ],
 
                         icon: value,
@@ -744,7 +791,7 @@ export default function EditLanding() {
 
             setError(
                 err.message ||
-                    "Failed to upload gallery image."
+                "Failed to upload gallery image."
             );
         } finally {
             setGalleryUploading(null);
@@ -859,7 +906,7 @@ export default function EditLanding() {
 
             setError(
                 err.message ||
-                    "Failed to save landing page."
+                "Failed to save landing page."
             );
         } finally {
             setSaving(false);
@@ -2157,16 +2204,16 @@ export default function EditLanding() {
                                                     index
                                                 ] && (
 
-                                                    <p className="mt-3 break-all text-xs text-text-muted">
-                                                        {
-                                                            galleryFiles[
-                                                                index
-                                                            ]
-                                                                .name
-                                                        }
-                                                    </p>
+                                                        <p className="mt-3 break-all text-xs text-text-muted">
+                                                            {
+                                                                galleryFiles[
+                                                                    index
+                                                                ]
+                                                                    .name
+                                                            }
+                                                        </p>
 
-                                                )}
+                                                    )}
 
                                                 {/* UPLOAD */}
 
@@ -2179,15 +2226,15 @@ export default function EditLanding() {
                                                     }
                                                     disabled={
                                                         !galleryFiles[
-                                                            index
+                                                        index
                                                         ] ||
                                                         galleryUploading ===
-                                                            index
+                                                        index
                                                     }
                                                     className="mt-4 w-full rounded-xl bg-secondary-color px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {galleryUploading ===
-                                                    index
+                                                        index
                                                         ? "Uploading..."
                                                         : "Upload to Cloudinary"}
                                                 </button>
@@ -2278,7 +2325,7 @@ export default function EditLanding() {
                                 saving ||
                                 heroUploading ||
                                 galleryUploading !==
-                                    null
+                                null
                             }
                             className="w-full rounded-xl bg-primary-color px-8 py-4 font-bold text-white shadow-lg transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         >

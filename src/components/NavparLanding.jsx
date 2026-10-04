@@ -52,6 +52,14 @@ export default function NavbarLanding({
     const scrollToSection = (id) => {
         closeMenu();
 
+        if (id === "home") {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+            });
+            return;
+        }
+
         document
             .getElementById(id)
             ?.scrollIntoView({
@@ -132,7 +140,18 @@ export default function NavbarLanding({
 
                     <Link
                         to={`/${locale}`}
-                        onClick={closeMenu}
+                        onClick={() => {
+                            closeMenu();
+                            if (
+                                window.location.pathname === `/${locale}` ||
+                                window.location.pathname === `/${locale}/`
+                            ) {
+                                window.scrollTo({
+                                    top: 0,
+                                    behavior: "smooth",
+                                });
+                            }
+                        }}
                         className="flex shrink-0 items-center gap-3"
                     >
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-whatsapp shadow-lg shadow-whatsapp/20">

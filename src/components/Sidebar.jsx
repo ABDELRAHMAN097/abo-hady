@@ -45,7 +45,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     .join("")
     .toUpperCase();
 
-  // فلترة عناصر القائمة وفقاً لرتبة وصلاحيات المستخدم الحالي
   const filteredMenuItems = menuItems.filter((item) => {
     if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
     return item.allowedRoles.includes(role);

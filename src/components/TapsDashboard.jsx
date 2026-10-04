@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   HiOutlineDocumentText,
   HiOutlineUserGroup,
@@ -6,29 +6,9 @@ import {
 import { LuWallet } from "react-icons/lu";
 import { BiGroup } from "react-icons/bi";
 
-import { getDashboardSummary } from "@/apis/auth";
-
 export default function TapsDashboard() {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboardSummary = async () => {
-      try {
-        const res = await getDashboardSummary();
-
-        if (res.success) {
-          setSummary(res.data.account);
-        }
-      } catch (error) {
-        console.error("DASHBOARD TOP CARDS ERROR:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardSummary();
-  }, []);
+  const [summary] = useState(null);
+  const [loading] = useState(false);
 
   const cards = [
     {

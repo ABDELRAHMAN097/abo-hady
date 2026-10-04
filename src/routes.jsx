@@ -13,10 +13,7 @@ import SelectRole from "@/pages/auth/SelectRole";
 
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Users from "@/pages/dashboard/Users";
-import TeacherProfile from "@/pages/dashboard/TeacherProfile";
-import Exams from "@/pages/dashboard/Exams";
 import Setting from "@/pages/dashboard/Setting";
-import Notification from "@/pages/dashboard/Notifications";
 import LandingPage from "@/pages/LandingPage";
 
 import { DEFAULT_LOCALE } from "./i18n/i18n/constant";
@@ -96,21 +93,6 @@ export const routes = [
                             {
                                 path: "setting",
                                 element: <Setting />,
-                            },
-
-                            {
-                                path: "exams",
-                                element: <Exams />,
-                            },
-
-                            {
-                                path: "notifications",
-                                element: <Notification />,
-                            },
-
-                            {
-                                path: "profile",
-                                element: <TeacherProfile />,
                             },
                         ],
                     },

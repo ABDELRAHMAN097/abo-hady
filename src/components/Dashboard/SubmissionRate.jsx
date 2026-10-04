@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ResponsiveContainer,
@@ -7,7 +7,6 @@ import {
   Cell,
 } from "recharts";
 import { useI18n } from "../../i18n/i18n/context";
-import { getTeacherStudents } from "@/apis/auth";
 
 const COLORS = {
   submitted: "#27418F",
@@ -52,29 +51,9 @@ const renderCustomLabel = ({
 };
 
 export default function SubmissionRate() {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [students] = useState([]);
+  const [loading] = useState(false);
   const { t } = useI18n();
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const res = await getTeacherStudents({
-          page: 1,
-          per_page: 50,
-        });
-
-        if (res.success) {
-          setStudents(res.data.students ?? []);
-        }
-      } catch (error) {
-        console.error("SUBMISSION RATE ERROR:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudents();
-  }, []);
 
   const totalAssignments = students.reduce(
     (total, item) => total + (item.exams_summary?.assignments_count ?? 0),
