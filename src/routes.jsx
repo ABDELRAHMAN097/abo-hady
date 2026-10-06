@@ -12,6 +12,7 @@ import VerifyCode from "@/pages/auth/VerifyCode";
 import SelectRole from "@/pages/auth/SelectRole";
 
 import Dashboard from "@/pages/dashboard/Dashboard";
+import Profile from "@/pages/dashboard/Profile";
 import Users from "@/pages/dashboard/Users";
 import Setting from "@/pages/dashboard/Setting";
 import LandingPage from "@/pages/LandingPage";
@@ -72,6 +73,10 @@ export const routes = [
                             {
                                 path: "dashboard",
                                 element: <Dashboard />,
+                            },
+                            {
+                                path: "profile",
+                                element: <Profile />,
                             },
                             {
                                 path: "users",
