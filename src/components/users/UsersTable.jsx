@@ -51,7 +51,7 @@ const RoleBadge = ({ role }) => {
 
     return (
         <span
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+            className={`inline-flex items-center gap-2 rounded-xl border px-2 py-1.5 text-xs font-semibold ${
                 isAdmin
                     ? "border-accent/30 bg-accent/10 text-accent"
                     : "border-border bg-card text-text-secondary"
@@ -86,11 +86,11 @@ const ChangeRoleButton = ({ onClick, fullWidth }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`group/btn inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-color px-4 py-2.5 text-xs font-bold text-background shadow-lg shadow-primary-color/10 transition-all duration-300 hover:bg-primary-hover hover:shadow-primary-color/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-color/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:scale-95 ${
+        className={`group/btn inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-color px-2 py-2.5 text-[10px] font-bold text-background shadow-lg shadow-primary-color/10 transition-all duration-300 hover:bg-primary-hover hover:shadow-primary-color/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-color/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:scale-95 ${
             fullWidth ? "w-full" : ""
         }`}
     >
-        <FiEdit2 className="transition-transform duration-300 group-hover/btn:-rotate-12" />
+        <FiEdit2 className="text-[10px] transition-transform duration-300 group-hover/btn:-rotate-12" />
         تغيير الدور
     </button>
 );
@@ -138,13 +138,13 @@ const UserRow = memo(({ user, onChangeRole }) => (
                 <span dir="ltr">{getPhone(user)}</span>
             </Info>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-3 py-4">
             <RoleBadge role={user.role} />
         </td>
         <td className="px-6 py-4">
             <StatusBadge status={user.status} />
         </td>
-        <td className="px-6 py-4">
+        <td className="px-3 py-4">
             <ChangeRoleButton onClick={() => onChangeRole(user)} />
         </td>
     </tr>
