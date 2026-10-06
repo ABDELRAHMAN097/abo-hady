@@ -5,580 +5,400 @@ import {
     useState,
 } from "react";
 
-import { toast } from "react-toastify";
-
 import {
     getAllUsers,
-    searchUsers,
     getUserStats,
+    searchUsers,
     updateUserRole,
 } from "@/services/auth";
 
-const USERS_PER_PAGE = 5;
-const SEARCH_DEBOUNCE = 500;
+const PAGE_SIZE = 5;
+const SEARCH_DEBOUNCE = 350;
+const MIN_SEARCH_LENGTH = 2;
 
-const INITIAL_STATS = {
-    total: 0,
-    customers: 0,
-    drivers: 0,
-    admins: 0,
-    superAdmins: 0,
-    management: 0,
-};
-
-export const useUsers = () => {
+const useUsers = () => {
+    // Normal paginated users state
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [regularLoading, setRegularLoading] = useState(true);
+    const [regularCurrentPage, setRegularCurrentPage] = useState(1);
+    const [regularHasNextPage, setRegularHasNextPage] = useState(false);
+    const cursorsRef = useRef({});
+    const usersRequestRef = useRef(0);
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    const [isDebouncing, setIsDebouncing] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchPage, setSearchPage] = useState(1);
+    const searchTimerRef = useRef(null);
+    const searchRequestRef = useRef(0);
+
+    // Filter states
+    const [searchBy, setSearchBy] = useState("all");
+    const [roleFilter, setRoleFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
+
+    // Stats state
+    const [stats, setStats] = useState({
+        total: 0,
+        customers: 0,
+        drivers: 0,
+        management: 0,
+        admins: 0,
+        superAdmins: 0,
+    });
     const [statsLoading, setStatsLoading] = useState(true);
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState(null);
-    const [searchLoading, setSearchLoading] = useState(false);
+    const isSearching = debouncedQuery.trim().length >= MIN_SEARCH_LENGTH;
 
-    const [selectedRoleFilter, setSelectedRoleFilter] =
-        useState("all");
-
-    const [selectedStatusFilter, setSelectedStatusFilter] =
-        useState("all");
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasNextPage, setHasNextPage] = useState(false);
-
-    const [pageCursors, setPageCursors] = useState([null]);
-    const [lastDoc, setLastDoc] = useState(null);
-
-    const [stats, setStats] = useState(INITIAL_STATS);
-
-    const [selectedUserForRole, setSelectedUserForRole] =
-        useState(null);
-
-    const [newTargetRole, setNewTargetRole] = useState("");
-
-    const [isUpdatingRole, setIsUpdatingRole] =
-        useState(false);
-
-    const searchRequestId = useRef(0);
-    const usersRequestId = useRef(0);
-
+    // Fetch paginated users for normal browsing
     const fetchUsersPage = useCallback(
-        async ({
-            cursor = null,
-            role = selectedRoleFilter,
-            status = selectedStatusFilter,
-        } = {}) => {
-            const requestId = ++usersRequestId.current;
+        async (page = 1) => {
+            const requestId = ++usersRequestRef.current;
+            setRegularLoading(true);
 
             try {
-                setLoading(true);
+                const cursor =
+                    page === 1
+                        ? null
+                        : cursorsRef.current[page - 1] || null;
 
                 const result = await getAllUsers({
-                    pageSize: USERS_PER_PAGE,
-                    role,
-                    status,
+                    pageSize: PAGE_SIZE,
+                    role: roleFilter,
+                    status: statusFilter,
                     cursor,
                 });
 
-                if (requestId !== usersRequestId.current) {
-                    return null;
+                if (requestId !== usersRequestRef.current) {
+                    return;
                 }
 
-                setUsers(result?.users || []);
-                setLastDoc(result?.lastDoc || null);
-                setHasNextPage(
-                    Boolean(result?.hasNextPage)
-                );
+                setUsers(result.users);
+                setRegularHasNextPage(result.hasNextPage);
+                setRegularCurrentPage(page);
 
-                return result;
+                if (result.lastDoc) {
+                    cursorsRef.current[page] = result.lastDoc;
+                }
             } catch (error) {
-                if (requestId !== usersRequestId.current) {
-                    return null;
+                if (requestId !== usersRequestRef.current) {
+                    return;
                 }
-
-                console.error(
-                    "Failed to fetch users:",
-                    error
-                );
-
                 setUsers([]);
-                setLastDoc(null);
-                setHasNextPage(false);
-
-                toast.error(
-                    "حدث خطأ أثناء تحميل المستخدمين"
-                );
-
-                return null;
+                setRegularHasNextPage(false);
             } finally {
-                if (requestId === usersRequestId.current) {
-                    setLoading(false);
+                if (requestId === usersRequestRef.current) {
+                    setRegularLoading(false);
                 }
             }
         },
-        [
-            selectedRoleFilter,
-            selectedStatusFilter,
-        ]
+        [roleFilter, statusFilter]
     );
 
+    // Fetch statistics
     const fetchStats = useCallback(async () => {
+        setStatsLoading(true);
         try {
-            setStatsLoading(true);
-
             const result = await getUserStats();
-
-            setStats({
-                total: result?.total || 0,
-                customers: result?.customers || 0,
-                drivers: result?.drivers || 0,
-                admins: result?.admins || 0,
-                superAdmins:
-                    result?.superAdmins || 0,
-                management:
-                    result?.management || 0,
-            });
+            setStats(result);
         } catch (error) {
-            console.error(
-                "Failed to fetch user stats:",
-                error
-            );
-
-            toast.error(
-                "حدث خطأ أثناء تحميل الإحصائيات"
-            );
+            setStats({
+                total: 0,
+                customers: 0,
+                drivers: 0,
+                management: 0,
+                admins: 0,
+                superAdmins: 0,
+            });
         } finally {
             setStatsLoading(false);
         }
     }, []);
 
-    const handleSearch = useCallback((value) => {
-        setSearchQuery(value);
-    }, []);
-
+    // Regular users browsing effect
     useEffect(() => {
-        const queryText = searchQuery.trim();
-
-        if (!queryText) {
-            searchRequestId.current += 1;
-            setSearchResults(null);
-            setSearchLoading(false);
-
+        if (isSearching) {
             return;
         }
 
-        const timer = setTimeout(async () => {
-            const requestId = ++searchRequestId.current;
+        cursorsRef.current = {};
+        setRegularCurrentPage(1);
+        fetchUsersPage(1);
+    }, [roleFilter, statusFilter, isSearching, fetchUsersPage]);
 
+    // Initial stats fetch
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    // Debounce handler on searchQuery changes
+    useEffect(() => {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+
+        const trimmed = searchQuery.trim();
+
+        if (trimmed.length < MIN_SEARCH_LENGTH) {
+            searchRequestRef.current += 1;
+            setIsDebouncing(false);
+            setDebouncedQuery("");
+            setSearchResults([]);
+            setSearchLoading(false);
+            setSearchPage(1);
+            return;
+        }
+
+        // Active typing: mark debouncing as active
+        setIsDebouncing(true);
+
+        searchTimerRef.current = setTimeout(() => {
+            setIsDebouncing(false);
+            setDebouncedQuery(trimmed);
+        }, SEARCH_DEBOUNCE);
+
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
+    }, [searchQuery]);
+
+    // Execute search when debounced query or any filter changes
+    useEffect(() => {
+        if (!isSearching) {
+            return;
+        }
+
+        const requestId = ++searchRequestRef.current;
+        setSearchLoading(true);
+        setSearchPage(1);
+
+        const runSearch = async () => {
             try {
-                setSearchLoading(true);
-
                 const results = await searchUsers({
-                    searchQuery: queryText,
-                    role: selectedRoleFilter,
-                    status: selectedStatusFilter,
+                    searchQuery: debouncedQuery,
+                    searchBy,
+                    role: roleFilter,
+                    status: statusFilter,
+                    limitResults: 100,
                 });
 
-                if (
-                    requestId !==
-                    searchRequestId.current
-                ) {
+                if (requestId !== searchRequestRef.current) {
                     return;
                 }
 
                 setSearchResults(results);
             } catch (error) {
-                if (
-                    requestId !==
-                    searchRequestId.current
-                ) {
+                if (requestId !== searchRequestRef.current) {
                     return;
                 }
-
-                console.error(
-                    "Failed to search users:",
-                    error
-                );
-
                 setSearchResults([]);
-
-                toast.error(
-                    "حدث خطأ أثناء البحث عن المستخدمين"
-                );
             } finally {
-                if (
-                    requestId ===
-                    searchRequestId.current
-                ) {
+                if (requestId === searchRequestRef.current) {
                     setSearchLoading(false);
                 }
             }
-        }, SEARCH_DEBOUNCE);
-
-        return () => {
-            clearTimeout(timer);
         };
-    }, [
-        searchQuery,
-        selectedRoleFilter,
-        selectedStatusFilter,
-    ]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-        setPageCursors([null]);
-        setLastDoc(null);
+        runSearch();
+    }, [debouncedQuery, searchBy, roleFilter, statusFilter, isSearching]);
 
-        if (searchQuery.trim()) {
-            return;
+    // Search input handler
+    const handleSearch = useCallback((value) => {
+        setSearchQuery(value);
+        if (!value.trim()) {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+            searchRequestRef.current += 1;
+            setIsDebouncing(false);
+            setDebouncedQuery("");
+            setSearchResults([]);
+            setSearchLoading(false);
+            setSearchPage(1);
         }
+    }, []);
 
-        fetchUsersPage({
-            cursor: null,
-            role: selectedRoleFilter,
-            status: selectedStatusFilter,
-        });
+    // Filter changes without wiping search query
+    const handleSearchByChange = useCallback((value) => {
+        setSearchBy(value);
+        setSearchPage(1);
+    }, []);
+
+    const handleRoleFilterChange = useCallback((value) => {
+        setRoleFilter(value);
+        setSearchPage(1);
+        cursorsRef.current = {};
+        setRegularCurrentPage(1);
+    }, []);
+
+    const handleStatusFilterChange = useCallback((value) => {
+        setStatusFilter(value);
+        setSearchPage(1);
+        cursorsRef.current = {};
+        setRegularCurrentPage(1);
+    }, []);
+
+    // Pagination calculations
+    const searchTotalPages = Math.max(1, Math.ceil(searchResults.length / PAGE_SIZE));
+
+    const pagedSearchResults = searchResults.slice(
+        (searchPage - 1) * PAGE_SIZE,
+        searchPage * PAGE_SIZE
+    );
+
+    const currentPage = isSearching ? searchPage : regularCurrentPage;
+    const hasNextPage = isSearching ? searchPage < searchTotalPages : regularHasNextPage;
+
+    const handleNextPage = useCallback(() => {
+        if (isSearching) {
+            if (searchPage < searchTotalPages && !searchLoading) {
+                setSearchPage((prev) => prev + 1);
+            }
+        } else {
+            if (regularHasNextPage && !regularLoading) {
+                fetchUsersPage(regularCurrentPage + 1);
+            }
+        }
     }, [
-        selectedRoleFilter,
-        selectedStatusFilter,
+        isSearching,
+        searchPage,
+        searchTotalPages,
+        searchLoading,
+        regularHasNextPage,
+        regularLoading,
+        regularCurrentPage,
         fetchUsersPage,
     ]);
 
-    useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
-
-    const filteredUsers =
-        searchQuery.trim().length > 0
-            ? searchResults || []
-            : users;
-
-    const handleRoleFilterChange = useCallback(
-        (newRole) => {
-            if (newRole === selectedRoleFilter) {
-                return;
+    const handlePreviousPage = useCallback(() => {
+        if (isSearching) {
+            if (searchPage > 1 && !searchLoading) {
+                setSearchPage((prev) => prev - 1);
             }
-
-            searchRequestId.current += 1;
-
-            setSearchQuery("");
-            setSearchResults(null);
-            setSearchLoading(false);
-
-            setCurrentPage(1);
-            setPageCursors([null]);
-            setLastDoc(null);
-
-            setSelectedRoleFilter(newRole);
-        },
-        [selectedRoleFilter]
-    );
-
-    const handleStatusFilterChange = useCallback(
-        (newStatus) => {
-            if (
-                newStatus ===
-                selectedStatusFilter
-            ) {
-                return;
+        } else {
+            if (regularCurrentPage > 1 && !regularLoading) {
+                fetchUsersPage(regularCurrentPage - 1);
             }
+        }
+    }, [
+        isSearching,
+        searchPage,
+        searchLoading,
+        regularCurrentPage,
+        regularLoading,
+        fetchUsersPage,
+    ]);
 
-            searchRequestId.current += 1;
+    // Refresh everything
+    const refreshUsers = useCallback(async () => {
+        usersRequestRef.current += 1;
+        searchRequestRef.current += 1;
 
-            setSearchQuery("");
-            setSearchResults(null);
-            setSearchLoading(false);
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
 
-            setCurrentPage(1);
-            setPageCursors([null]);
-            setLastDoc(null);
+        setIsDebouncing(false);
+        setSearchQuery("");
+        setDebouncedQuery("");
+        setSearchResults([]);
+        setSearchLoading(false);
+        setSearchPage(1);
 
-            setSelectedStatusFilter(newStatus);
-        },
-        [selectedStatusFilter]
-    );
+        cursorsRef.current = {};
+        setRegularCurrentPage(1);
 
-    const handleNextPage = useCallback(
-        async () => {
-            if (
-                loading ||
-                searchQuery.trim() ||
-                !hasNextPage ||
-                !lastDoc
-            ) {
-                return;
-            }
+        await Promise.all([
+            fetchUsersPage(1),
+            fetchStats(),
+        ]);
+    }, [fetchUsersPage, fetchStats]);
 
-            const nextPage =
-                currentPage + 1;
+    // Role update
+    const handleRoleUpdate = useCallback(
+        async (userId, newRole) => {
+            await updateUserRole(userId, newRole);
 
-            const currentLastDoc =
-                lastDoc;
+            if (isSearching) {
+                searchRequestRef.current += 1;
+                const requestId = searchRequestRef.current;
+                setSearchLoading(true);
 
-            const result =
-                await fetchUsersPage({
-                    cursor:
-                        currentLastDoc,
-                    role:
-                        selectedRoleFilter,
-                    status:
-                        selectedStatusFilter,
-                });
+                try {
+                    const results = await searchUsers({
+                        searchQuery: debouncedQuery,
+                        searchBy,
+                        role: roleFilter,
+                        status: statusFilter,
+                        limitResults: 100,
+                    });
 
-            if (!result) {
-                return;
-            }
-
-            setPageCursors(
-                (previous) => {
-                    const updated = [
-                        ...previous,
-                    ];
-
-                    updated[nextPage - 1] =
-                        currentLastDoc;
-
-                    return updated;
+                    if (requestId === searchRequestRef.current) {
+                        setSearchResults(results);
+                    }
+                } finally {
+                    if (requestId === searchRequestRef.current) {
+                        setSearchLoading(false);
+                    }
                 }
-            );
+            } else {
+                await fetchUsersPage(regularCurrentPage);
+            }
 
-            setCurrentPage(nextPage);
+            await fetchStats();
         },
         [
-            loading,
-            searchQuery,
-            hasNextPage,
-            lastDoc,
-            currentPage,
+            isSearching,
+            debouncedQuery,
+            searchBy,
+            roleFilter,
+            statusFilter,
+            regularCurrentPage,
             fetchUsersPage,
-            selectedRoleFilter,
-            selectedStatusFilter,
+            fetchStats,
         ]
     );
 
-    const handlePreviousPage =
-        useCallback(async () => {
-            if (
-                loading ||
-                searchQuery.trim() ||
-                currentPage <= 1
-            ) {
-                return;
-            }
-
-            const previousPage =
-                currentPage - 1;
-
-            const previousCursor =
-                pageCursors[
-                    previousPage - 1
-                ] || null;
-
-            const result =
-                await fetchUsersPage({
-                    cursor:
-                        previousCursor,
-                    role:
-                        selectedRoleFilter,
-                    status:
-                        selectedStatusFilter,
-                });
-
-            if (result) {
-                setCurrentPage(
-                    previousPage
-                );
-            }
-        }, [
-            loading,
-            searchQuery,
-            currentPage,
-            pageCursors,
-            fetchUsersPage,
-            selectedRoleFilter,
-            selectedStatusFilter,
-        ]);
-
-    const refreshUsers =
-        useCallback(async () => {
-            searchRequestId.current += 1;
-
-            setSearchQuery("");
-            setSearchResults(null);
-            setSearchLoading(false);
-
-            setCurrentPage(1);
-            setPageCursors([null]);
-            setLastDoc(null);
-
-            await fetchUsersPage({
-                cursor: null,
-                role: selectedRoleFilter,
-                status: selectedStatusFilter,
-            });
-
-            await fetchStats();
-        }, [
-            fetchUsersPage,
-            fetchStats,
-            selectedRoleFilter,
-            selectedStatusFilter,
-        ]);
-
-    const openRoleModal = useCallback(
-        (user) => {
-            setSelectedUserForRole(user);
-            setNewTargetRole(
-                user?.role || "customer"
-            );
-        },
-        []
-    );
-
-    const closeRoleModal = useCallback(() => {
-        if (isUpdatingRole) {
-            return;
-        }
-
-        setSelectedUserForRole(null);
-        setNewTargetRole("");
-    }, [isUpdatingRole]);
-
-    const confirmRoleUpdate =
-        useCallback(async () => {
-            if (
-                !selectedUserForRole ||
-                !newTargetRole
-            ) {
-                return;
-            }
-
-            const userId =
-                selectedUserForRole.id ||
-                selectedUserForRole.uid;
-
-            if (!userId) {
-                toast.error(
-                    "لم يتم العثور على معرف المستخدم"
-                );
-
-                return;
-            }
-
-            if (
-                selectedUserForRole.role ===
-                newTargetRole
-            ) {
-                toast.info(
-                    "المستخدم بالفعل لديه هذا الدور"
-                );
-
-                return;
-            }
-
-            try {
-                setIsUpdatingRole(true);
-
-                await updateUserRole(
-                    userId,
-                    newTargetRole
-                );
-
-                toast.success(
-                    "تم تحديث صلاحيات المستخدم بنجاح"
-                );
-
-                setSelectedUserForRole(null);
-                setNewTargetRole("");
-
-                if (searchQuery.trim()) {
-                    const results =
-                        await searchUsers({
-                            searchQuery:
-                                searchQuery.trim(),
-                            role:
-                                selectedRoleFilter,
-                            status:
-                                selectedStatusFilter,
-                        });
-
-                    setSearchResults(
-                        results
-                    );
-                } else {
-                    const currentCursor =
-                        pageCursors[
-                            currentPage - 1
-                        ] || null;
-
-                    await fetchUsersPage({
-                        cursor:
-                            currentCursor,
-                        role:
-                            selectedRoleFilter,
-                        status:
-                            selectedStatusFilter,
-                    });
-                }
-
-                await fetchStats();
-            } catch (error) {
-                console.error(
-                    "Failed to update user role:",
-                    error
-                );
-
-                toast.error(
-                    "حدث خطأ أثناء تحديث صلاحيات المستخدم"
-                );
-            } finally {
-                setIsUpdatingRole(false);
-            }
-        }, [
-            selectedUserForRole,
-            newTargetRole,
-            searchQuery,
-            selectedRoleFilter,
-            selectedStatusFilter,
-            pageCursors,
-            currentPage,
-            fetchUsersPage,
-            fetchStats,
-        ]);
-
     return {
         users,
-        filteredUsers,
+        filteredUsers: isSearching ? pagedSearchResults : users,
+        totalSearchResults: searchResults.length,
 
-        loading:
-            loading || searchLoading,
-
+        loading: isSearching ? searchLoading : regularLoading,
         searchLoading,
+        isDebouncing,
+        statsLoading,
 
         searchQuery,
-        setSearchQuery,
-        handleSearch,
+        searchBy,
 
-        selectedRoleFilter,
-        selectedStatusFilter,
+        handleSearch,
+        handleSearchByChange,
+
+        roleFilter,
+        statusFilter,
 
         handleRoleFilterChange,
         handleStatusFilterChange,
 
         stats,
+
         currentPage,
         hasNextPage,
 
         handleNextPage,
         handlePreviousPage,
+
         refreshUsers,
+        handleRoleUpdate,
 
-        selectedUserForRole,
-        newTargetRole,
-        setNewTargetRole,
-
-        openRoleModal,
-        closeRoleModal,
-
-        confirmRoleUpdate,
-        isUpdatingRole,
+        isSearching,
     };
 };
+
+export default useUsers;

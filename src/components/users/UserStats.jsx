@@ -48,10 +48,10 @@ const UserStats = ({
                                     {card.title}
                                 </p>
 
-                                <p className="mt-2 text-2xl font-bold text-text-primary">
-                                    {loading
-                                        ? "..."
-                                        : card.value}
+                                <p className="mt-2 flex h-8 items-center text-2xl font-bold text-text-primary">
+                                    <span className={loading ? "abu-pulse text-text-muted" : ""}>
+                                        {loading ? "..." : card.value}
+                                    </span>
                                 </p>
                             </div>
 

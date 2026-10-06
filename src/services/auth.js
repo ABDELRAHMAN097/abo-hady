@@ -39,6 +39,110 @@ const googleProvider =
 const USERS_COLLECTION = "users";
 
 const DEFAULT_PAGE_SIZE = 5;
+const MAX_PAGE_SIZE = 50;
+const MAX_SEARCH_VALUES = 30;
+
+export const convertArabicNumerals = (value) => {
+    const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+    const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
+    return String(value ?? "")
+        .replace(/[٠-٩]/g, (d) => arabicDigits.indexOf(d))
+        .replace(/[۰-۹]/g, (d) => persianDigits.indexOf(d));
+};
+
+export const normalizeArabic = (value) => {
+    return convertArabicNumerals(value)
+        .replace(/[\u064B-\u065F\u0670]/g, "") // Tashkeel / diacritics
+        .replace(/\u0640/g, "") // Tatweel
+        .replace(/[أإآٱ]/g, "ا") // Alef variants
+        .replace(/ة/g, "ه") // Ta marbuta
+        .replace(/ى/g, "ي") // Ya / Alef maqsura
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+};
+
+export const normalizeText = (value) => normalizeArabic(value);
+
+export const normalizePhone = (value) => {
+    return convertArabicNumerals(value).replace(/\D/g, "");
+};
+
+const getSearchFields = ({
+    name = "",
+    displayName = "",
+    email = "",
+    phone = "",
+    phoneNumber = "",
+}) => ({
+    nameNormalized: normalizeArabic(
+        name || displayName
+    ),
+    emailNormalized: String(email ?? "").toLowerCase().trim(),
+    phoneNormalized: normalizePhone(
+        phone || phoneNumber
+    ),
+});
+
+const saveUserSearchFields = async (
+    userId,
+    userData
+) => {
+    if (!userId || !userData) {
+        return;
+    }
+
+    const searchFields =
+        getSearchFields(userData);
+
+    const hasSearchFields =
+        userData.nameNormalized ===
+            searchFields.nameNormalized &&
+        userData.emailNormalized ===
+            searchFields.emailNormalized &&
+        userData.phoneNormalized ===
+            searchFields.phoneNormalized;
+
+    if (hasSearchFields) {
+        return;
+    }
+
+    await updateDoc(
+        doc(
+            db,
+            USERS_COLLECTION,
+            userId
+        ),
+        searchFields
+    );
+};
+
+const chunkArray = (
+    array,
+    size
+) => {
+    const chunks = [];
+
+    for (
+        let index = 0;
+        index < array.length;
+        index += size
+    ) {
+        chunks.push(
+            array.slice(
+                index,
+                index + size
+            )
+        );
+    }
+
+    return chunks;
+};
+
+const mapUser = (docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+});
 
 export const registerWithEmail =
     async ({
@@ -73,6 +177,13 @@ export const registerWithEmail =
         }
 
         try {
+            const searchFields =
+                getSearchFields({
+                    name,
+                    email,
+                    phone,
+                });
+
             await setDoc(
                 doc(
                     db,
@@ -86,6 +197,7 @@ export const registerWithEmail =
                     phone: phone || "",
                     role: "customer",
                     status: "active",
+                    ...searchFields,
                     createdAt:
                         serverTimestamp(),
                     updatedAt:
@@ -109,11 +221,40 @@ export const loginWithEmail =
         email,
         password
     ) => {
-        return await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
+        const result =
+            await signInWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
+
+        try {
+            const userDocRef =
+                doc(
+                    db,
+                    USERS_COLLECTION,
+                    result.user.uid
+                );
+
+            const userDoc =
+                await getDoc(
+                    userDocRef
+                );
+
+            if (userDoc.exists()) {
+                await saveUserSearchFields(
+                    result.user.uid,
+                    userDoc.data()
+                );
+            }
+        } catch (error) {
+            console.error(
+                "User search fields update error:",
+                error
+            );
+        }
+
+        return result;
     };
 
 export const signInWithGoogle =
@@ -141,6 +282,17 @@ export const signInWithGoogle =
                 );
 
             if (!userDoc.exists()) {
+                const searchFields =
+                    getSearchFields({
+                        name:
+                            user.displayName ||
+                            "مستخدم Google",
+                        email:
+                            user.email || "",
+                        phone:
+                            user.phoneNumber || "",
+                    });
+
                 await setDoc(
                     userDocRef,
                     {
@@ -149,18 +301,22 @@ export const signInWithGoogle =
                             user.displayName ||
                             "مستخدم Google",
                         email:
-                            user.email ||
-                            "",
+                            user.email || "",
                         phone:
-                            user.phoneNumber ||
-                            "",
+                            user.phoneNumber || "",
                         role: "customer",
                         status: "active",
+                        ...searchFields,
                         createdAt:
                             serverTimestamp(),
                         updatedAt:
                             serverTimestamp(),
                     }
+                );
+            } else {
+                await saveUserSearchFields(
+                    user.uid,
+                    userDoc.data()
                 );
             }
         } catch (error) {
@@ -217,261 +373,316 @@ export const getUserProfile =
         }
     };
 
-export const getAllUsers = async ({
-    pageSize = DEFAULT_PAGE_SIZE,
-    role = "all",
-    status = "all",
-    cursor = null,
-} = {}) => {
-    try {
-        const usersRef =
-            collection(
-                db,
-                USERS_COLLECTION
-            );
+export const getAllUsers =
+    async ({
+        pageSize = DEFAULT_PAGE_SIZE,
+        role = "all",
+        status = "all",
+        cursor = null,
+    } = {}) => {
+        try {
+            const usersRef =
+                collection(
+                    db,
+                    USERS_COLLECTION
+                );
 
-        const constraints = [];
+            const safePageSize =
+                Math.min(
+                    Math.max(
+                        Number(pageSize) || DEFAULT_PAGE_SIZE,
+                        1
+                    ),
+                    MAX_PAGE_SIZE
+                );
 
-        if (
-            role &&
-            role !== "all"
-        ) {
-            constraints.push(
-                where(
-                    "role",
-                    "==",
-                    role
-                )
-            );
-        }
+            const constraints = [];
 
-        if (
-            status &&
-            status !== "all"
-        ) {
-            constraints.push(
-                where(
-                    "status",
-                    "==",
-                    status
-                )
-            );
-        }
-
-        constraints.push(
-            orderBy(
-                documentId(),
-                "asc"
-            )
-        );
-
-        if (cursor) {
-            constraints.push(
-                startAfter(cursor)
-            );
-        }
-
-        constraints.push(
-            limit(
-                pageSize + 1
-            )
-        );
-
-        const usersQuery =
-            query(
-                usersRef,
-                ...constraints
-            );
-
-        const querySnapshot =
-            await getDocs(
-                usersQuery
-            );
-
-        const documents =
-            querySnapshot.docs;
-
-        const hasNextPage =
-            documents.length >
-            pageSize;
-
-        const pageDocuments =
-            hasNextPage
-                ? documents.slice(
-                    0,
-                    pageSize
-                )
-                : documents;
-
-        const users =
-            pageDocuments.map(
-                (docSnap) => ({
-                    id: docSnap.id,
-                    ...docSnap.data(),
-                })
-            );
-
-        const lastDoc =
-            pageDocuments.length > 0
-                ? pageDocuments[
-                    pageDocuments.length - 1
-                ]
-                : null;
-
-        return {
-            users,
-            lastDoc,
-            hasNextPage,
-        };
-    } catch (error) {
-        console.error(
-            "Error fetching paginated users:",
-            error
-        );
-
-        throw error;
-    }
-};
-
-export const searchUsers = async ({
-    searchQuery = "",
-    role = "all",
-    status = "all",
-} = {}) => {
-    try {
-        const normalizedQuery =
-            String(searchQuery).trim();
-
-        if (!normalizedQuery) {
-            return [];
-        }
-
-        const usersRef =
-            collection(
-                db,
-                USERS_COLLECTION
-            );
-
-        const snapshot =
-            await getDocs(
-                query(usersRef)
-            );
-
-        const searchTerms =
-            normalizedQuery
-                .split(/[,،\s\n]+/)
-                .map((term) =>
-                    term
-                        .trim()
-                        .toLowerCase()
-                )
-                .filter(Boolean);
-
-        if (
-            searchTerms.length === 0
-        ) {
-            return [];
-        }
-
-        const users =
-            snapshot.docs.map(
-                (docSnap) => ({
-                    id: docSnap.id,
-                    ...docSnap.data(),
-                })
-            );
-
-        return users.filter(
-            (user) => {
-                if (
-                    role &&
-                    role !== "all" &&
-                    user.role !== role
-                ) {
-                    return false;
-                }
-
-                if (
-                    status &&
-                    status !== "all" &&
-                    user.status !== status
-                ) {
-                    return false;
-                }
-
-                const name =
-                    String(
-                        user.name ||
-                        user.displayName ||
-                        ""
+            if (
+                role &&
+                role !== "all"
+            ) {
+                constraints.push(
+                    where(
+                        "role",
+                        "==",
+                        role
                     )
-                        .trim()
-                        .toLowerCase();
-
-                const email =
-                    String(
-                        user.email || ""
-                    )
-                        .trim()
-                        .toLowerCase();
-
-                const phone =
-                    String(
-                        user.phone ||
-                        user.phoneNumber ||
-                        ""
-                    )
-                        .replace(
-                            /\s+/g,
-                            ""
-                        )
-                        .trim()
-                        .toLowerCase();
-
-                const uid =
-                    String(
-                        user.uid ||
-                        user.id ||
-                        ""
-                    )
-                        .trim()
-                        .toLowerCase();
-
-                return searchTerms.some(
-                    (term) => {
-                        const normalizedTerm =
-                            term
-                                .replace(
-                                    /\s+/g,
-                                    ""
-                                )
-                                .toLowerCase();
-
-                        return (
-                            name.includes(
-                                term
-                            ) ||
-                            email.includes(
-                                term
-                            ) ||
-                            phone.includes(
-                                normalizedTerm
-                            ) ||
-                            uid.includes(
-                                term
-                            )
-                        );
-                    }
                 );
             }
-        );
-    } catch (error) {
-        console.error(
-            "Error searching users:",
-            error
-        );
 
-        throw error;
+            if (
+                status &&
+                status !== "all"
+            ) {
+                constraints.push(
+                    where(
+                        "status",
+                        "==",
+                        status
+                    )
+                );
+            }
+
+            constraints.push(
+                orderBy(
+                    documentId(),
+                    "asc"
+                )
+            );
+
+            if (cursor) {
+                constraints.push(
+                    startAfter(cursor)
+                );
+            }
+
+            constraints.push(
+                limit(
+                    safePageSize + 1
+                )
+            );
+
+            let querySnapshot;
+            try {
+                const usersQuery =
+                    query(
+                        usersRef,
+                        ...constraints
+                    );
+
+                querySnapshot =
+                    await getDocs(
+                        usersQuery
+                    );
+            } catch (queryErr) {
+                console.warn(
+                    "Firestore query requires index or failed, falling back to base query:",
+                    queryErr
+                );
+
+                const fallbackQuery = query(
+                    usersRef,
+                    limit(safePageSize + 1)
+                );
+                querySnapshot = await getDocs(fallbackQuery);
+            }
+
+            const documents =
+                querySnapshot.docs;
+
+            const hasNextPage =
+                documents.length >
+                safePageSize;
+
+            const pageDocuments =
+                hasNextPage
+                    ? documents.slice(
+                          0,
+                          safePageSize
+                      )
+                    : documents;
+
+            const users =
+                pageDocuments.map(
+                    mapUser
+                );
+
+            const lastDoc =
+                pageDocuments.length > 0
+                    ? pageDocuments[
+                          pageDocuments.length - 1
+                      ]
+                    : null;
+
+            return {
+                users,
+                lastDoc,
+                hasNextPage,
+            };
+        } catch (error) {
+            console.error(
+                "Error fetching paginated users:",
+                error
+            );
+
+            throw error;
+        }
+    };
+
+/**
+ * Splits query string into separate search targets.
+ * Supports delimiters: commas (English and Arabic), semicolons, pipes, newlines.
+ * If no delimiters are present, checks if multiple emails or phones are space-separated.
+ * Otherwise treats string as a unified search phrase.
+ */
+export const parseSearchTargets = (queryStr) => {
+    if (!queryStr) return [];
+
+    const hasDelimiter = /[,،;|\n]/.test(queryStr);
+    if (hasDelimiter) {
+        return queryStr
+            .split(/[,،;|\n]+/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+    }
+
+    const trimmed = queryStr.trim();
+    const spaceTokens = trimmed.split(/\s+/).filter(Boolean);
+    if (spaceTokens.length > 1) {
+        const areAllPhonesOrEmails = spaceTokens.every(
+            (token) => token.includes("@") || /^\d{6,}$/.test(normalizePhone(token))
+        );
+        if (areAllPhonesOrEmails) {
+            return spaceTokens;
+        }
+    }
+
+    return [trimmed];
+};
+
+/**
+ * Searches users across fields with support for:
+ * - Multiple users simultaneously (comma / Arabic comma separated)
+ * - Compound names with spaces (e.g. "محمد أحمد")
+ * - Arabic text normalization (alef, hamza, ta marbuta, etc.)
+ * - Partial phone numbers & Arabic/Persian digits
+ * - Partial & exact email matches
+ * - User ID matching
+ * - Combined role and status filtering
+ * - Resilient fallback against Firestore missing composite index errors
+ */
+export const searchUsers = async ({
+    searchQuery = "",
+    searchBy = "all",
+    role = "all",
+    status = "all",
+    limitResults = 100,
+} = {}) => {
+    try {
+        const targets = parseSearchTargets(searchQuery);
+        if (!targets.length) {
+            return [];
+        }
+
+        const usersRef = collection(db, USERS_COLLECTION);
+        let snapshot;
+
+        try {
+            const constraints = [];
+            if (role && role !== "all") {
+                constraints.push(where("role", "==", role));
+            }
+            if (status && status !== "all") {
+                constraints.push(where("status", "==", status));
+            }
+            const q = constraints.length > 0 ? query(usersRef, ...constraints) : query(usersRef);
+            snapshot = await getDocs(q);
+        } catch (indexError) {
+            console.warn("Firestore indexed query error, falling back to all users scan:", indexError);
+            snapshot = await getDocs(usersRef);
+        }
+
+        const allUsers = snapshot.docs.map(mapUser);
+
+        const parsedTargets = targets.map((t) => {
+            const normText = normalizeArabic(t);
+            const normPhone = normalizePhone(t);
+            const normEmail = String(t).toLowerCase().trim();
+            const words = normText.split(/\s+/).filter(Boolean);
+            return {
+                raw: t,
+                normText,
+                normPhone,
+                normEmail,
+                words,
+            };
+        });
+
+        const scoredUsers = [];
+
+        for (const user of allUsers) {
+            const userRole = String(user.role || "").toLowerCase();
+            const userStatus = String(user.status || "").toLowerCase();
+
+            if (role && role !== "all" && userRole !== role.toLowerCase()) {
+                continue;
+            }
+
+            if (status && status !== "all" && userStatus !== status.toLowerCase()) {
+                continue;
+            }
+
+            const userName = normalizeArabic(user.name || user.displayName || "");
+            const userEmail = String(user.email || "").toLowerCase().trim();
+            const userPhone = normalizePhone(user.phone || user.phoneNumber || "");
+            const userId = String(user.id || user.uid || "").toLowerCase().trim();
+
+            let bestScore = 0;
+
+            for (const target of parsedTargets) {
+                let matchScore = 0;
+
+                const checkName = () => {
+                    if (!target.normText) return 0;
+                    if (userName === target.normText) return 100;
+                    if (userName.startsWith(target.normText)) return 60;
+                    if (userName.includes(target.normText)) return 40;
+                    if (target.words.length > 1 && target.words.every((w) => userName.includes(w))) {
+                        return 35;
+                    }
+                    return 0;
+                };
+
+                const checkEmail = () => {
+                    if (!target.normEmail) return 0;
+                    if (userEmail === target.normEmail) return 100;
+                    if (userEmail.startsWith(target.normEmail)) return 60;
+                    if (userEmail.includes(target.normEmail)) return 30;
+                    return 0;
+                };
+
+                const checkPhone = () => {
+                    if (!target.normPhone || target.normPhone.length < 2) return 0;
+                    if (userPhone === target.normPhone) return 100;
+                    if (userPhone.endsWith(target.normPhone) || userPhone.startsWith(target.normPhone)) return 60;
+                    if (userPhone.includes(target.normPhone)) return 40;
+                    return 0;
+                };
+
+                const checkId = () => {
+                    if (!target.normEmail) return 0;
+                    if (userId === target.normEmail) return 100;
+                    if (userId.includes(target.normEmail)) return 40;
+                    return 0;
+                };
+
+                if (searchBy === "name") {
+                    matchScore = checkName();
+                } else if (searchBy === "email") {
+                    matchScore = checkEmail();
+                } else if (searchBy === "phone") {
+                    matchScore = checkPhone();
+                } else {
+                    matchScore = Math.max(checkName(), checkEmail(), checkPhone(), checkId());
+                }
+
+                if (matchScore > bestScore) {
+                    bestScore = matchScore;
+                }
+            }
+
+            if (bestScore > 0) {
+                scoredUsers.push({ user, score: bestScore });
+            }
+        }
+
+        scoredUsers.sort((a, b) => b.score - a.score);
+
+        return scoredUsers.slice(0, limitResults).map((item) => item.user);
+    } catch (error) {
+        console.error("Error searching users:", error);
+        return [];
     }
 };
 
@@ -606,13 +817,13 @@ export const getUsersCountByRole =
                 role === "all"
                     ? query(usersRef)
                     : query(
-                        usersRef,
-                        where(
-                            "role",
-                            "==",
-                            role
-                        )
-                    );
+                          usersRef,
+                          where(
+                              "role",
+                              "==",
+                              role
+                          )
+                      );
 
             const snapshot =
                 await getCountFromServer(
