@@ -10,45 +10,33 @@ import { useUsers } from "@/hooks/useUsers";
 const Users = () => {
     const {
         filteredUsers,
-
         loading,
         statsLoading,
-
         searchQuery,
-        setSearchQuery,
-
+        handleSearch,
         selectedRoleFilter,
         selectedStatusFilter,
-
         handleRoleFilterChange,
         handleStatusFilterChange,
-
         stats,
-
         currentPage,
         hasNextPage,
-
         handleNextPage,
         handlePreviousPage,
-
         refreshUsers,
-
         selectedUserForRole,
         newTargetRole,
         setNewTargetRole,
-
         openRoleModal,
         closeRoleModal,
         confirmRoleUpdate,
-
         isUpdatingRole,
     } = useUsers();
 
+    const isSearching = searchQuery.trim().length > 0;
+
     return (
-        <div
-            dir="rtl"
-            className="space-y-6"
-        >
+        <div dir="rtl" className="space-y-6 mb-5">
             <UsersHeader
                 onRefresh={refreshUsers}
                 loading={loading}
@@ -61,58 +49,36 @@ const Users = () => {
 
             <UserFilters
                 searchQuery={searchQuery}
-                onSearchChange={
-                    setSearchQuery
-                }
-                selectedRoleFilter={
-                    selectedRoleFilter
-                }
-                onRoleFilterChange={
-                    handleRoleFilterChange
-                }
-                selectedStatusFilter={
-                    selectedStatusFilter
-                }
-                onStatusFilterChange={
-                    handleStatusFilterChange
-                }
+                onSearchChange={handleSearch}
+                selectedRoleFilter={selectedRoleFilter}
+                onRoleFilterChange={handleRoleFilterChange}
+                selectedStatusFilter={selectedStatusFilter}
+                onStatusFilterChange={handleStatusFilterChange}
             />
 
             <UsersTable
                 users={filteredUsers}
                 loading={loading}
-                onEditRole={
-                    openRoleModal
-                }
+                onEditRole={openRoleModal}
             />
 
-            <UsersPagination
-                currentPage={currentPage}
-                hasNextPage={hasNextPage}
-                loading={loading}
-                onNext={handleNextPage}
-                onPrevious={
-                    handlePreviousPage
-                }
-            />
+            {!isSearching && (
+                <UsersPagination
+                    currentPage={currentPage}
+                    hasNextPage={hasNextPage}
+                    loading={loading}
+                    onNext={handleNextPage}
+                    onPrevious={handlePreviousPage}
+                />
+            )}
 
             <ChangeRoleModal
-                user={
-                    selectedUserForRole
-                }
-                selectedRole={
-                    newTargetRole
-                }
-                onRoleChange={
-                    setNewTargetRole
-                }
+                user={selectedUserForRole}
+                selectedRole={newTargetRole}
+                onRoleChange={setNewTargetRole}
                 onClose={closeRoleModal}
-                onConfirm={
-                    confirmRoleUpdate
-                }
-                loading={
-                    isUpdatingRole
-                }
+                onConfirm={confirmRoleUpdate}
+                loading={isUpdatingRole}
             />
         </div>
     );

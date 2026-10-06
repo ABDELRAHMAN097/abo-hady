@@ -107,7 +107,7 @@ export default function Register() {
         if (password.length < 6) {
             return {
                 label: "ضعيفة",
-                width: "33%",
+                width: "43%",
                 color: "bg-red-500",
             };
         }

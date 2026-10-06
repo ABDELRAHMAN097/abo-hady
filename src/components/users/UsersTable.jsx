@@ -6,13 +6,8 @@ import {
     FaEdit,
 } from "react-icons/fa";
 
-import {
-    BsTelephone,
-} from "react-icons/bs";
-
-import {
-    CgMail,
-} from "react-icons/cg";
+import { BsTelephone } from "react-icons/bs";
+import { CgMail } from "react-icons/cg";
 
 const ROLE_CONFIG = {
     super_admin: {
@@ -44,24 +39,17 @@ const ROLE_CONFIG = {
     },
 };
 
-const formatCreatedAt = (
-    createdAt
-) => {
+const formatCreatedAt = (createdAt) => {
     if (!createdAt) {
         return "غير معروف";
     }
 
     try {
-        const date =
-            createdAt?.toDate
-                ? createdAt.toDate()
-                : new Date(createdAt);
+        const date = createdAt?.toDate
+            ? createdAt.toDate()
+            : new Date(createdAt);
 
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
+        if (Number.isNaN(date.getTime())) {
             return "غير معروف";
         }
 
@@ -87,10 +75,7 @@ const getInitials = (name) => {
         .trim()
         .split(/\s+/)
         .slice(0, 2)
-        .map(
-            (word) =>
-                word.charAt(0)
-        )
+        .map((word) => word.charAt(0))
         .join("")
         .toUpperCase();
 };
@@ -156,137 +141,123 @@ const UsersTable = ({
                                 </td>
                             </tr>
                         ) : (
-                            users.map(
-                                (user) => {
-                                    const role =
-                                        ROLE_CONFIG[
-                                            user.role
-                                        ] ||
-                                        ROLE_CONFIG.customer;
+                            users.map((user) => {
+                                const role =
+                                    ROLE_CONFIG[
+                                        user.role
+                                    ] ||
+                                    ROLE_CONFIG.customer;
 
-                                    const Icon =
-                                        role.icon;
+                                const Icon =
+                                    role.icon;
 
-                                    const isActive =
-                                        user.status !==
-                                        "inactive";
+                                const isActive =
+                                    user.status !==
+                                    "inactive";
 
-                                    return (
-                                        <tr
-                                            key={
-                                                user.id ||
-                                                user.uid
-                                            }
-                                            className="border-b border-border last:border-b-0 transition hover:bg-card/60"
-                                        >
-                                            {/* User */}
+                                return (
+                                    <tr
+                                        key={
+                                            user.id ||
+                                            user.uid
+                                        }
+                                        className="border-b border-border last:border-b-0 transition hover:bg-card/60"
+                                    >
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-color/10 font-bold text-primary-color">
+                                                    {getInitials(
+                                                        user.name
+                                                    )}
+                                                </div>
 
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-color/10 font-bold text-primary-color">
-                                                        {getInitials(
-                                                            user.name
-                                                        )}
-                                                    </div>
+                                                <div className="min-w-0">
+                                                    <p className="truncate font-semibold text-text-primary">
+                                                        {user.name ||
+                                                            "بدون اسم"}
+                                                    </p>
 
-                                                    <div className="min-w-0">
-                                                        <p className="truncate font-semibold text-text-primary">
-                                                            {user.name ||
-                                                                "بدون اسم"}
-                                                        </p>
+                                                    <div className="mt-1 flex items-center gap-1.5 text-xs text-text-muted">
+                                                        <CgMail />
 
-                                                        <div className="mt-1 flex items-center gap-1.5 text-xs text-text-muted">
-                                                            <CgMail />
-
-                                                            <span className="max-w-[230px] truncate">
-                                                                {user.email ||
-                                                                    "بدون بريد"}
-                                                            </span>
-                                                        </div>
+                                                        <span className="max-w-[230px] truncate">
+                                                            {user.email ||
+                                                                "بدون بريد"}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            {/* Phone */}
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-2 text-sm text-text-secondary">
+                                                <BsTelephone className="text-primary-color" />
 
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                                    <BsTelephone className="text-primary-color" />
-
-                                                    <span dir="ltr">
-                                                        {user.phone ||
-                                                            "غير متوفر"}
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {/* Role */}
-
-                                            <td className="px-5 py-4">
-                                                <span
-                                                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold ${role.className}`}
-                                                >
-                                                    <Icon />
-
-                                                    {
-                                                        role.label
-                                                    }
+                                                <span dir="ltr">
+                                                    {user.phone ||
+                                                        "غير متوفر"}
                                                 </span>
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            {/* Status */}
+                                        <td className="px-5 py-4">
+                                            <span
+                                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold ${role.className}`}
+                                            >
+                                                <Icon />
 
-                                            <td className="px-5 py-4">
+                                                {
+                                                    role.label
+                                                }
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span
+                                                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold ${
+                                                    isActive
+                                                        ? "bg-success/10 text-success"
+                                                        : "bg-error/10 text-error"
+                                                }`}
+                                            >
                                                 <span
-                                                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold ${
+                                                    className={`h-1.5 w-1.5 rounded-full ${
                                                         isActive
-                                                            ? "bg-success/10 text-success"
-                                                            : "bg-error/10 text-error"
+                                                            ? "bg-success"
+                                                            : "bg-error"
                                                     }`}
-                                                >
-                                                    <span
-                                                        className={`h-1.5 w-1.5 rounded-full ${
-                                                            isActive
-                                                                ? "bg-success"
-                                                                : "bg-error"
-                                                        }`}
-                                                    />
+                                                />
 
-                                                    {isActive
-                                                        ? "نشط"
-                                                        : "غير نشط"}
-                                                </span>
-                                            </td>
+                                                {isActive
+                                                    ? "نشط"
+                                                    : "غير نشط"}
+                                            </span>
+                                        </td>
 
-                                            {/* Created */}
+                                        <td className="px-5 py-4 text-sm text-text-secondary">
+                                            {formatCreatedAt(
+                                                user.createdAt
+                                            )}
+                                        </td>
 
-                                            <td className="px-5 py-4 text-sm text-text-secondary">
-                                                {formatCreatedAt(
-                                                    user.createdAt
-                                                )}
-                                            </td>
+                                        <td className="px-5 py-4">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    onEditRole(
+                                                        user
+                                                    )
+                                                }
+                                                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary-color hover:text-primary-color"
+                                            >
+                                                <FaEdit />
 
-                                            {/* Actions */}
-
-                                            <td className="px-5 py-4">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        onEditRole(
-                                                            user
-                                                        )
-                                                    }
-                                                    className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary-color hover:text-primary-color"
-                                                >
-                                                    <FaEdit />
-
-                                                    تعديل الدور
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                }
-                            )
+                                                تعديل الدور
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

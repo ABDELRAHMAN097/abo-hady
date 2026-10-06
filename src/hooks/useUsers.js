@@ -1,6 +1,7 @@
 import {
     useCallback,
     useEffect,
+    useRef,
     useState,
 } from "react";
 
@@ -8,11 +9,13 @@ import { toast } from "react-toastify";
 
 import {
     getAllUsers,
+    searchUsers,
     getUserStats,
     updateUserRole,
 } from "@/services/auth";
 
 const USERS_PER_PAGE = 5;
+const SEARCH_DEBOUNCE = 500;
 
 const INITIAL_STATS = {
     total: 0,
@@ -24,29 +27,13 @@ const INITIAL_STATS = {
 };
 
 export const useUsers = () => {
-    // ======================================================
-    // Users
-    // ======================================================
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
 
-    const [users, setUsers] =
-        useState([]);
-
-    const [loading, setLoading] =
-        useState(true);
-
-    const [statsLoading, setStatsLoading] =
-        useState(true);
-
-    // ======================================================
-    // Search
-    // ======================================================
-
-    const [searchQuery, setSearchQuery] =
-        useState("");
-
-    // ======================================================
-    // Filters
-    // ======================================================
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState(null);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     const [selectedRoleFilter, setSelectedRoleFilter] =
         useState("all");
@@ -54,60 +41,24 @@ export const useUsers = () => {
     const [selectedStatusFilter, setSelectedStatusFilter] =
         useState("all");
 
-    // ======================================================
-    // Pagination
-    // ======================================================
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(false);
 
-    const [currentPage, setCurrentPage] =
-        useState(1);
+    const [pageCursors, setPageCursors] = useState([null]);
+    const [lastDoc, setLastDoc] = useState(null);
 
-    const [hasNextPage, setHasNextPage] =
-        useState(false);
-
-    /*
-     * Cursor of every page.
-     *
-     * pageCursors[0] = cursor for page 1
-     * pageCursors[1] = cursor for page 2
-     * pageCursors[2] = cursor for page 3
-     *
-     * Page 1 always starts with null.
-     */
-
-    const [pageCursors, setPageCursors] =
-        useState([null]);
-
-    /*
-     * Last Firestore document
-     * of the currently loaded page.
-     */
-
-    const [lastDoc, setLastDoc] =
-        useState(null);
-
-    // ======================================================
-    // Statistics
-    // ======================================================
-
-    const [stats, setStats] =
-        useState(INITIAL_STATS);
-
-    // ======================================================
-    // Role Modal
-    // ======================================================
+    const [stats, setStats] = useState(INITIAL_STATS);
 
     const [selectedUserForRole, setSelectedUserForRole] =
         useState(null);
 
-    const [newTargetRole, setNewTargetRole] =
-        useState("");
+    const [newTargetRole, setNewTargetRole] = useState("");
 
     const [isUpdatingRole, setIsUpdatingRole] =
         useState(false);
 
-    // ======================================================
-    // Fetch Users
-    // ======================================================
+    const searchRequestId = useRef(0);
+    const usersRequestId = useRef(0);
 
     const fetchUsersPage = useCallback(
         async ({
@@ -115,58 +66,42 @@ export const useUsers = () => {
             role = selectedRoleFilter,
             status = selectedStatusFilter,
         } = {}) => {
+            const requestId = ++usersRequestId.current;
+
             try {
                 setLoading(true);
 
-                const result =
-                    await getAllUsers({
-                        pageSize:
-                            USERS_PER_PAGE,
+                const result = await getAllUsers({
+                    pageSize: USERS_PER_PAGE,
+                    role,
+                    status,
+                    cursor,
+                });
 
-                        role,
+                if (requestId !== usersRequestId.current) {
+                    return null;
+                }
 
-                        status,
-
-                        cursor,
-                    });
-
-                setUsers(
-                    result?.users || []
-                );
-
-                setLastDoc(
-                    result?.lastDoc || null
-                );
-
+                setUsers(result?.users || []);
+                setLastDoc(result?.lastDoc || null);
                 setHasNextPage(
-                    Boolean(
-                        result?.hasNextPage
-                    )
+                    Boolean(result?.hasNextPage)
                 );
 
                 return result;
             } catch (error) {
+                if (requestId !== usersRequestId.current) {
+                    return null;
+                }
+
                 console.error(
                     "Failed to fetch users:",
                     error
                 );
 
                 setUsers([]);
-
                 setLastDoc(null);
-
                 setHasNextPage(false);
-
-                /*
-                 * Don't hide the actual Firestore
-                 * error from us during development.
-                 */
-
-                console.error(
-                    "Firestore error details:",
-                    error?.code,
-                    error?.message
-                );
 
                 toast.error(
                     "حدث خطأ أثناء تحميل المستخدمين"
@@ -174,7 +109,9 @@ export const useUsers = () => {
 
                 return null;
             } finally {
-                setLoading(false);
+                if (requestId === usersRequestId.current) {
+                    setLoading(false);
+                }
             }
         },
         [
@@ -183,200 +120,159 @@ export const useUsers = () => {
         ]
     );
 
-    // ======================================================
-    // Fetch Stats
-    // ======================================================
+    const fetchStats = useCallback(async () => {
+        try {
+            setStatsLoading(true);
 
-    const fetchStats =
-        useCallback(async () => {
-            try {
-                setStatsLoading(true);
+            const result = await getUserStats();
 
-                const result =
-                    await getUserStats();
+            setStats({
+                total: result?.total || 0,
+                customers: result?.customers || 0,
+                drivers: result?.drivers || 0,
+                admins: result?.admins || 0,
+                superAdmins:
+                    result?.superAdmins || 0,
+                management:
+                    result?.management || 0,
+            });
+        } catch (error) {
+            console.error(
+                "Failed to fetch user stats:",
+                error
+            );
 
-                setStats({
-                    total:
-                        result?.total || 0,
+            toast.error(
+                "حدث خطأ أثناء تحميل الإحصائيات"
+            );
+        } finally {
+            setStatsLoading(false);
+        }
+    }, []);
 
-                    customers:
-                        result?.customers ||
-                        0,
-
-                    drivers:
-                        result?.drivers ||
-                        0,
-
-                    admins:
-                        result?.admins ||
-                        0,
-
-                    superAdmins:
-                        result?.superAdmins ||
-                        0,
-
-                    management:
-                        result?.management ||
-                        0,
-                });
-            } catch (error) {
-                console.error(
-                    "Failed to fetch user stats:",
-                    error
-                );
-
-                toast.error(
-                    "حدث خطأ أثناء تحميل الإحصائيات"
-                );
-            } finally {
-                setStatsLoading(false);
-            }
-        }, []);
-
-    // ======================================================
-    // Initial Load + Filter Changes
-    // ======================================================
+    const handleSearch = useCallback((value) => {
+        setSearchQuery(value);
+    }, []);
 
     useEffect(() => {
-        let cancelled = false;
+        const queryText = searchQuery.trim();
 
-        const loadPageOne =
-            async () => {
-                /*
-                 * Every time role/status changes,
-                 * completely reset pagination.
-                 */
+        if (!queryText) {
+            searchRequestId.current += 1;
+            setSearchResults(null);
+            setSearchLoading(false);
 
-                setCurrentPage(1);
+            return;
+        }
 
-                setPageCursors([
-                    null,
-                ]);
+        const timer = setTimeout(async () => {
+            const requestId = ++searchRequestId.current;
 
-                setLastDoc(null);
+            try {
+                setSearchLoading(true);
 
-                if (cancelled) {
+                const results = await searchUsers({
+                    searchQuery: queryText,
+                    role: selectedRoleFilter,
+                    status: selectedStatusFilter,
+                });
+
+                if (
+                    requestId !==
+                    searchRequestId.current
+                ) {
                     return;
                 }
 
-                await fetchUsersPage({
-                    cursor: null,
+                setSearchResults(results);
+            } catch (error) {
+                if (
+                    requestId !==
+                    searchRequestId.current
+                ) {
+                    return;
+                }
 
-                    role:
-                        selectedRoleFilter,
+                console.error(
+                    "Failed to search users:",
+                    error
+                );
 
-                    status:
-                        selectedStatusFilter,
-                });
-            };
+                setSearchResults([]);
 
-        loadPageOne();
+                toast.error(
+                    "حدث خطأ أثناء البحث عن المستخدمين"
+                );
+            } finally {
+                if (
+                    requestId ===
+                    searchRequestId.current
+                ) {
+                    setSearchLoading(false);
+                }
+            }
+        }, SEARCH_DEBOUNCE);
 
         return () => {
-            cancelled = true;
+            clearTimeout(timer);
         };
+    }, [
+        searchQuery,
+        selectedRoleFilter,
+        selectedStatusFilter,
+    ]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        setPageCursors([null]);
+        setLastDoc(null);
+
+        if (searchQuery.trim()) {
+            return;
+        }
+
+        fetchUsersPage({
+            cursor: null,
+            role: selectedRoleFilter,
+            status: selectedStatusFilter,
+        });
     }, [
         selectedRoleFilter,
         selectedStatusFilter,
         fetchUsersPage,
     ]);
 
-    // ======================================================
-    // Initial Statistics
-    // ======================================================
-
     useEffect(() => {
         fetchStats();
     }, [fetchStats]);
 
-    // ======================================================
-    // Search
-    // ======================================================
-
-    /*
-     * Search currently works on the loaded page only.
-     *
-     * It does NOT download all users.
-     */
-
     const filteredUsers =
-        users.filter((user) => {
-            const query =
-                searchQuery
-                    .trim()
-                    .toLowerCase();
+        searchQuery.trim().length > 0
+            ? searchResults || []
+            : users;
 
-            if (!query) {
-                return true;
-            }
-
-            const name =
-                user.name
-                    ?.toLowerCase() || "";
-
-            const email =
-                user.email
-                    ?.toLowerCase() || "";
-
-            const phone =
-                user.phone
-                    ?.toLowerCase() || "";
-
-            return (
-                name.includes(query) ||
-                email.includes(query) ||
-                phone.includes(query)
-            );
-        });
-
-    // ======================================================
-    // Role Filter
-    // ======================================================
-
-    const handleRoleFilterChange =
+    const handleRoleFilterChange = useCallback(
         (newRole) => {
-            if (
-                newRole ===
-                selectedRoleFilter
-            ) {
+            if (newRole === selectedRoleFilter) {
                 return;
             }
 
-            /*
-             * Clear search when changing
-             * the dataset.
-             */
+            searchRequestId.current += 1;
 
             setSearchQuery("");
-
-            /*
-             * Reset pagination immediately.
-             */
+            setSearchResults(null);
+            setSearchLoading(false);
 
             setCurrentPage(1);
-
-            setPageCursors([
-                null,
-            ]);
-
+            setPageCursors([null]);
             setLastDoc(null);
 
-            /*
-             * Changing this state triggers
-             * the useEffect above which
-             * fetches page 1.
-             */
+            setSelectedRoleFilter(newRole);
+        },
+        [selectedRoleFilter]
+    );
 
-            setSelectedRoleFilter(
-                newRole
-            );
-        };
-
-    // ======================================================
-    // Status Filter
-    // ======================================================
-
-    const handleStatusFilterChange =
+    const handleStatusFilterChange = useCallback(
         (newStatus) => {
             if (
                 newStatus ===
@@ -385,81 +281,84 @@ export const useUsers = () => {
                 return;
             }
 
+            searchRequestId.current += 1;
+
             setSearchQuery("");
+            setSearchResults(null);
+            setSearchLoading(false);
 
             setCurrentPage(1);
-
-            setPageCursors([
-                null,
-            ]);
-
+            setPageCursors([null]);
             setLastDoc(null);
 
-            setSelectedStatusFilter(
-                newStatus
-            );
-        };
+            setSelectedStatusFilter(newStatus);
+        },
+        [selectedStatusFilter]
+    );
 
-    // ======================================================
-    // Next Page
-    // ======================================================
-
-    const handleNextPage = async () => {
-        if (
-            loading ||
-            !hasNextPage ||
-            !lastDoc
-        ) {
-            return;
-        }
-
-        const nextPage =
-            currentPage + 1;
-
-        const result =
-            await fetchUsersPage({
-                cursor: lastDoc,
-
-                role:
-                    selectedRoleFilter,
-
-                status:
-                    selectedStatusFilter,
-            });
-
-        if (!result) {
-            return;
-        }
-
-        // Save the cursor only after
-        // successfully loading the next page.
-
-        setPageCursors(
-            (previous) => {
-                const updated = [
-                    ...previous,
-                ];
-
-                updated[nextPage - 1] =
-                    lastDoc;
-
-                return updated;
-            }
-        );
-
-        setCurrentPage(
-            nextPage
-        );
-    };
-
-    // ======================================================
-    // Previous Page
-    // ======================================================
-
-    const handlePreviousPage =
+    const handleNextPage = useCallback(
         async () => {
             if (
                 loading ||
+                searchQuery.trim() ||
+                !hasNextPage ||
+                !lastDoc
+            ) {
+                return;
+            }
+
+            const nextPage =
+                currentPage + 1;
+
+            const currentLastDoc =
+                lastDoc;
+
+            const result =
+                await fetchUsersPage({
+                    cursor:
+                        currentLastDoc,
+                    role:
+                        selectedRoleFilter,
+                    status:
+                        selectedStatusFilter,
+                });
+
+            if (!result) {
+                return;
+            }
+
+            setPageCursors(
+                (previous) => {
+                    const updated = [
+                        ...previous,
+                    ];
+
+                    updated[nextPage - 1] =
+                        currentLastDoc;
+
+                    return updated;
+                }
+            );
+
+            setCurrentPage(nextPage);
+        },
+        [
+            loading,
+            searchQuery,
+            hasNextPage,
+            lastDoc,
+            currentPage,
+            fetchUsersPage,
+            selectedRoleFilter,
+            selectedStatusFilter,
+        ]
+    );
+
+    const handlePreviousPage =
+        useCallback(async () => {
+            if (
+                loading ||
+                searchQuery.trim() ||
                 currentPage <= 1
             ) {
                 return;
@@ -468,28 +367,17 @@ export const useUsers = () => {
             const previousPage =
                 currentPage - 1;
 
-            /*
-             * Get the cursor that starts
-             * the previous page.
-             *
-             * Page 1 => null
-             * Page 2 => pageCursors[1]
-             * Page 3 => pageCursors[2]
-             */
-
             const previousCursor =
                 pageCursors[
-                previousPage - 1
+                    previousPage - 1
                 ] || null;
 
             const result =
                 await fetchUsersPage({
                     cursor:
                         previousCursor,
-
                     role:
                         selectedRoleFilter,
-
                     status:
                         selectedStatusFilter,
                 });
@@ -499,78 +387,63 @@ export const useUsers = () => {
                     previousPage
                 );
             }
-        };
-
-    // ======================================================
-    // Refresh
-    // ======================================================
+        }, [
+            loading,
+            searchQuery,
+            currentPage,
+            pageCursors,
+            fetchUsersPage,
+            selectedRoleFilter,
+            selectedStatusFilter,
+        ]);
 
     const refreshUsers =
-        async () => {
+        useCallback(async () => {
+            searchRequestId.current += 1;
+
             setSearchQuery("");
+            setSearchResults(null);
+            setSearchLoading(false);
 
             setCurrentPage(1);
-
-            setPageCursors([
-                null,
-            ]);
-
+            setPageCursors([null]);
             setLastDoc(null);
 
             await fetchUsersPage({
                 cursor: null,
-
-                role:
-                    selectedRoleFilter,
-
-                status:
-                    selectedStatusFilter,
+                role: selectedRoleFilter,
+                status: selectedStatusFilter,
             });
 
             await fetchStats();
-        };
+        }, [
+            fetchUsersPage,
+            fetchStats,
+            selectedRoleFilter,
+            selectedStatusFilter,
+        ]);
 
-    // ======================================================
-    // Open Role Modal
-    // ======================================================
-
-    const openRoleModal =
+    const openRoleModal = useCallback(
         (user) => {
-            setSelectedUserForRole(
-                user
-            );
-
+            setSelectedUserForRole(user);
             setNewTargetRole(
-                user?.role ||
-                "customer"
+                user?.role || "customer"
             );
-        };
+        },
+        []
+    );
 
-    // ======================================================
-    // Close Role Modal
-    // ======================================================
+    const closeRoleModal = useCallback(() => {
+        if (isUpdatingRole) {
+            return;
+        }
 
-    const closeRoleModal =
-        () => {
-            if (
-                isUpdatingRole
-            ) {
-                return;
-            }
-
-            setSelectedUserForRole(
-                null
-            );
-
-            setNewTargetRole("");
-        };
-
-    // ======================================================
-    // Confirm Role Update
-    // ======================================================
+        setSelectedUserForRole(null);
+        setNewTargetRole("");
+    }, [isUpdatingRole]);
 
     const confirmRoleUpdate =
-        async () => {
+        useCallback(async () => {
             if (
                 !selectedUserForRole ||
                 !newTargetRole
@@ -602,9 +475,7 @@ export const useUsers = () => {
             }
 
             try {
-                setIsUpdatingRole(
-                    true
-                );
+                setIsUpdatingRole(true);
 
                 await updateUserRole(
                     userId,
@@ -615,31 +486,38 @@ export const useUsers = () => {
                     "تم تحديث صلاحيات المستخدم بنجاح"
                 );
 
-                setSelectedUserForRole(
-                    null
-                );
-
+                setSelectedUserForRole(null);
                 setNewTargetRole("");
 
-                /*
-                 * Reload the current page.
-                 */
+                if (searchQuery.trim()) {
+                    const results =
+                        await searchUsers({
+                            searchQuery:
+                                searchQuery.trim(),
+                            role:
+                                selectedRoleFilter,
+                            status:
+                                selectedStatusFilter,
+                        });
 
-                const currentCursor =
-                    pageCursors[
-                    currentPage - 1
-                    ] || null;
+                    setSearchResults(
+                        results
+                    );
+                } else {
+                    const currentCursor =
+                        pageCursors[
+                            currentPage - 1
+                        ] || null;
 
-                await fetchUsersPage({
-                    cursor:
-                        currentCursor,
-
-                    role:
-                        selectedRoleFilter,
-
-                    status:
-                        selectedStatusFilter,
-                });
+                    await fetchUsersPage({
+                        cursor:
+                            currentCursor,
+                        role:
+                            selectedRoleFilter,
+                        status:
+                            selectedStatusFilter,
+                    });
+                }
 
                 await fetchStats();
             } catch (error) {
@@ -652,59 +530,55 @@ export const useUsers = () => {
                     "حدث خطأ أثناء تحديث صلاحيات المستخدم"
                 );
             } finally {
-                setIsUpdatingRole(
-                    false
-                );
+                setIsUpdatingRole(false);
             }
-        };
-
-    // ======================================================
-    // Return
-    // ======================================================
+        }, [
+            selectedUserForRole,
+            newTargetRole,
+            searchQuery,
+            selectedRoleFilter,
+            selectedStatusFilter,
+            pageCursors,
+            currentPage,
+            fetchUsersPage,
+            fetchStats,
+        ]);
 
     return {
-        // Users
         users,
         filteredUsers,
 
-        // Loading
-        loading,
-        statsLoading,
+        loading:
+            loading || searchLoading,
 
-        // Search
+        searchLoading,
+
         searchQuery,
         setSearchQuery,
+        handleSearch,
 
-        // Filters
         selectedRoleFilter,
         selectedStatusFilter,
 
         handleRoleFilterChange,
         handleStatusFilterChange,
 
-        // Stats
         stats,
-
-        // Pagination
         currentPage,
         hasNextPage,
 
         handleNextPage,
         handlePreviousPage,
-
-        // Refresh
         refreshUsers,
 
-        // Role Modal
         selectedUserForRole,
         newTargetRole,
-
         setNewTargetRole,
 
         openRoleModal,
         closeRoleModal,
-        confirmRoleUpdate,
 
+        confirmRoleUpdate,
         isUpdatingRole,
     };
 };

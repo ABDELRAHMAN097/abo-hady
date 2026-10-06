@@ -60,8 +60,6 @@ const ChangeRoleModal = ({
                     event.stopPropagation()
                 }
             >
-                {/* Header */}
-
                 <div className="flex items-center justify-between border-b border-border px-6 py-5">
                     <div>
                         <h2 className="text-lg font-bold text-text-primary">
@@ -84,12 +82,9 @@ const ChangeRoleModal = ({
                     </button>
                 </div>
 
-                {/* Roles */}
-
                 <div className="space-y-3 p-6">
                     {ROLES.map((role) => {
-                        const Icon =
-                            role.icon;
+                        const Icon = role.icon;
 
                         const active =
                             selectedRole ===
@@ -97,18 +92,14 @@ const ChangeRoleModal = ({
 
                         return (
                             <button
-                                key={
-                                    role.value
-                                }
+                                key={role.value}
                                 type="button"
                                 onClick={() =>
                                     onRoleChange(
                                         role.value
                                     )
                                 }
-                                disabled={
-                                    loading
-                                }
+                                disabled={loading}
                                 className={`flex w-full items-start gap-4 rounded-xl border p-4 text-right transition ${
                                     active
                                         ? "border-primary-color bg-primary-color/10"
@@ -133,9 +124,7 @@ const ChangeRoleModal = ({
                                                 : "text-text-primary"
                                         }`}
                                     >
-                                        {
-                                            role.label
-                                        }
+                                        {role.label}
                                     </p>
 
                                     <p className="mt-1 text-xs leading-5 text-text-secondary">
@@ -156,8 +145,6 @@ const ChangeRoleModal = ({
                         );
                     })}
                 </div>
-
-                {/* Footer */}
 
                 <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
                     <button

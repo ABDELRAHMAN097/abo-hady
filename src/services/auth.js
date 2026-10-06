@@ -36,14 +36,9 @@ const auth = getAuth(app);
 const googleProvider =
     new GoogleAuthProvider();
 
-const USERS_COLLECTION =
-    "users";
+const USERS_COLLECTION = "users";
 
 const DEFAULT_PAGE_SIZE = 5;
-
-// ======================================================
-// Authentication
-// ======================================================
 
 export const registerWithEmail =
     async ({
@@ -97,16 +92,9 @@ export const registerWithEmail =
                         serverTimestamp(),
                 }
             );
-
-            console.log(
-                "✅ Firestore user document created:",
-                user.uid
-            );
-        } catch (
-        firestoreError
-        ) {
+        } catch (firestoreError) {
             console.error(
-                "❌ Firestore user creation error:",
+                "Firestore user creation error:",
                 firestoreError
             );
 
@@ -175,10 +163,10 @@ export const signInWithGoogle =
                     }
                 );
             }
-        } catch (err) {
+        } catch (error) {
             console.error(
                 "Firestore Google sign in doc error:",
-                err
+                error
             );
         }
 
@@ -198,10 +186,6 @@ export const logout =
         return await signOut(auth);
     };
 
-// ======================================================
-// User Profile
-// ======================================================
-
 export const getUserProfile =
     async (uid) => {
         try {
@@ -213,13 +197,9 @@ export const getUserProfile =
                 );
 
             const docSnap =
-                await getDoc(
-                    docRef
-                );
+                await getDoc(docRef);
 
-            if (
-                docSnap.exists()
-            ) {
+            if (docSnap.exists()) {
                 return {
                     id: docSnap.id,
                     ...docSnap.data(),
@@ -237,38 +217,6 @@ export const getUserProfile =
         }
     };
 
-// ======================================================
-// Users Pagination
-// ======================================================
-
-/**
- * Get users page-by-page from Firestore.
- *
- * IMPORTANT:
- * This does NOT download all users.
- *
- * Example:
- *
- * const result = await getAllUsers({
- *     pageSize: 5,
- *     role: "customer",
- *     status: "active",
- *     cursor: lastDocument,
- * });
- *
- * Returns:
- *
- * {
- *     users,
- *     lastDoc,
- *     hasNextPage
- * }
- */
-
-// ======================================================
-// Users Pagination
-// ======================================================
-
 export const getAllUsers = async ({
     pageSize = DEFAULT_PAGE_SIZE,
     role = "all",
@@ -276,45 +224,39 @@ export const getAllUsers = async ({
     cursor = null,
 } = {}) => {
     try {
-        const usersRef = collection(
-            db,
-            USERS_COLLECTION
-        );
+        const usersRef =
+            collection(
+                db,
+                USERS_COLLECTION
+            );
 
         const constraints = [];
 
-        // ==================================================
-        // Filters
-        // ==================================================
-
-        if (role && role !== "all") {
+        if (
+            role &&
+            role !== "all"
+        ) {
             constraints.push(
-                where("role", "==", role)
+                where(
+                    "role",
+                    "==",
+                    role
+                )
             );
         }
 
-        if (status && status !== "all") {
+        if (
+            status &&
+            status !== "all"
+        ) {
             constraints.push(
-                where("status", "==", status)
+                where(
+                    "status",
+                    "==",
+                    status
+                )
             );
         }
-
-        // ==================================================
-        // Stable Pagination Order
-        // ==================================================
-        /*
-         * We intentionally use documentId()
-         * instead of createdAt.
-         *
-         * Why?
-         *
-         * Some old users don't have createdAt.
-         * Firestore orderBy(createdAt) excludes
-         * those documents completely.
-         *
-         * documentId() exists for every Firestore
-         * document, so all users will appear.
-         */
 
         constraints.push(
             orderBy(
@@ -323,51 +265,35 @@ export const getAllUsers = async ({
             )
         );
 
-        // ==================================================
-        // Pagination Cursor
-        // ==================================================
-
         if (cursor) {
             constraints.push(
                 startAfter(cursor)
             );
         }
 
-        // ==================================================
-        // Fetch One Extra Document
-        // ==================================================
-
         constraints.push(
-            limit(pageSize + 1)
+            limit(
+                pageSize + 1
+            )
         );
 
-        // ==================================================
-        // Build Query
-        // ==================================================
-
-        const usersQuery = query(
-            usersRef,
-            ...constraints
-        );
+        const usersQuery =
+            query(
+                usersRef,
+                ...constraints
+            );
 
         const querySnapshot =
-            await getDocs(usersQuery);
-            
+            await getDocs(
+                usersQuery
+            );
 
         const documents =
             querySnapshot.docs;
 
-        // ==================================================
-        // Check Next Page
-        // ==================================================
-
         const hasNextPage =
             documents.length >
             pageSize;
-
-        // ==================================================
-        // Current Page Documents
-        // ==================================================
 
         const pageDocuments =
             hasNextPage
@@ -377,10 +303,6 @@ export const getAllUsers = async ({
                 )
                 : documents;
 
-        // ==================================================
-        // Convert Documents
-        // ==================================================
-
         const users =
             pageDocuments.map(
                 (docSnap) => ({
@@ -389,14 +311,10 @@ export const getAllUsers = async ({
                 })
             );
 
-        // ==================================================
-        // Last Document
-        // ==================================================
-
         const lastDoc =
             pageDocuments.length > 0
                 ? pageDocuments[
-                pageDocuments.length - 1
+                    pageDocuments.length - 1
                 ]
                 : null;
 
@@ -415,6 +333,147 @@ export const getAllUsers = async ({
     }
 };
 
+export const searchUsers = async ({
+    searchQuery = "",
+    role = "all",
+    status = "all",
+} = {}) => {
+    try {
+        const normalizedQuery =
+            String(searchQuery).trim();
+
+        if (!normalizedQuery) {
+            return [];
+        }
+
+        const usersRef =
+            collection(
+                db,
+                USERS_COLLECTION
+            );
+
+        const snapshot =
+            await getDocs(
+                query(usersRef)
+            );
+
+        const searchTerms =
+            normalizedQuery
+                .split(/[,،\s\n]+/)
+                .map((term) =>
+                    term
+                        .trim()
+                        .toLowerCase()
+                )
+                .filter(Boolean);
+
+        if (
+            searchTerms.length === 0
+        ) {
+            return [];
+        }
+
+        const users =
+            snapshot.docs.map(
+                (docSnap) => ({
+                    id: docSnap.id,
+                    ...docSnap.data(),
+                })
+            );
+
+        return users.filter(
+            (user) => {
+                if (
+                    role &&
+                    role !== "all" &&
+                    user.role !== role
+                ) {
+                    return false;
+                }
+
+                if (
+                    status &&
+                    status !== "all" &&
+                    user.status !== status
+                ) {
+                    return false;
+                }
+
+                const name =
+                    String(
+                        user.name ||
+                        user.displayName ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const email =
+                    String(
+                        user.email || ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                const phone =
+                    String(
+                        user.phone ||
+                        user.phoneNumber ||
+                        ""
+                    )
+                        .replace(
+                            /\s+/g,
+                            ""
+                        )
+                        .trim()
+                        .toLowerCase();
+
+                const uid =
+                    String(
+                        user.uid ||
+                        user.id ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                return searchTerms.some(
+                    (term) => {
+                        const normalizedTerm =
+                            term
+                                .replace(
+                                    /\s+/g,
+                                    ""
+                                )
+                                .toLowerCase();
+
+                        return (
+                            name.includes(
+                                term
+                            ) ||
+                            email.includes(
+                                term
+                            ) ||
+                            phone.includes(
+                                normalizedTerm
+                            ) ||
+                            uid.includes(
+                                term
+                            )
+                        );
+                    }
+                );
+            }
+        );
+    } catch (error) {
+        console.error(
+            "Error searching users:",
+            error
+        );
+
+        throw error;
+    }
+};
 
 export const getUserStats =
     async () => {
@@ -474,28 +533,23 @@ export const getUserStats =
                 driversSnapshot,
                 adminsSnapshot,
                 superAdminsSnapshot,
-            ] =
-                await Promise.all([
-                    getCountFromServer(
-                        totalQuery
-                    ),
-
-                    getCountFromServer(
-                        customersQuery
-                    ),
-
-                    getCountFromServer(
-                        driversQuery
-                    ),
-
-                    getCountFromServer(
-                        adminsQuery
-                    ),
-
-                    getCountFromServer(
-                        superAdminsQuery
-                    ),
-                ]);
+            ] = await Promise.all([
+                getCountFromServer(
+                    totalQuery
+                ),
+                getCountFromServer(
+                    customersQuery
+                ),
+                getCountFromServer(
+                    driversQuery
+                ),
+                getCountFromServer(
+                    adminsQuery
+                ),
+                getCountFromServer(
+                    superAdminsQuery
+                ),
+            ]);
 
             const total =
                 totalSnapshot.data()
@@ -523,7 +577,6 @@ export const getUserStats =
                 drivers,
                 admins,
                 superAdmins,
-
                 management:
                     admins +
                     superAdmins,
@@ -538,15 +591,6 @@ export const getUserStats =
         }
     };
 
-// ======================================================
-// Role Statistics
-// ======================================================
-
-/**
- * Get count for a specific role.
- *
- * Useful for filter tabs.
- */
 export const getUsersCountByRole =
     async (
         role = "all"
@@ -558,16 +602,10 @@ export const getUsersCountByRole =
                     USERS_COLLECTION
                 );
 
-            let usersQuery;
-
-            if (
+            const usersQuery =
                 role === "all"
-            ) {
-                usersQuery =
-                    query(usersRef);
-            } else {
-                usersQuery =
-                    query(
+                    ? query(usersRef)
+                    : query(
                         usersRef,
                         where(
                             "role",
@@ -575,7 +613,6 @@ export const getUsersCountByRole =
                             role
                         )
                     );
-            }
 
             const snapshot =
                 await getCountFromServer(
@@ -594,10 +631,6 @@ export const getUsersCountByRole =
             throw error;
         }
     };
-
-// ======================================================
-// Update User Role
-// ======================================================
 
 export const updateUserRole =
     async (
@@ -631,10 +664,6 @@ export const updateUserRole =
             throw error;
         }
     };
-
-// ======================================================
-// Exports
-// ======================================================
 
 export {
     auth,
