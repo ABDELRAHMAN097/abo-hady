@@ -9,16 +9,18 @@ const SEARCH_BY = [
 
 const ROLES = [
     ["all", "كل الأدوار"],
-    ["customer", "Customer"],
-    ["driver", "Driver"],
-    ["admin", "Admin"],
-    ["super_admin", "Super Admin"],
+    ["customer", "عميل"],
+    ["driver", "سائق"],
+    ["admin", "مدير"],
+    ["super_admin", "مدير عام"],
 ];
 
 const STATUSES = [
     ["all", "كل الحالات"],
-    ["active", "Active"],
-    ["inactive", "Inactive"],
+    ["active", "نشط"],
+    ["inactive", "غير نشط"],
+    ["pending", "قيد المراجعة"],
+    ["blocked", "محظور"],
 ];
 
 const fieldClass =

@@ -4,10 +4,17 @@ import ChangeRoleModal from "./ChangeRoleModal";
 
 const ROLE_LABELS = {
     admin: "مدير",
-    user: "مستخدم",
+    super_admin: "سوبر ادمن",
+    superadmin: "سوبر ادمن",
+    driver: "سائق",
     customer: "عميل",
+    client: "عميل",
+    user: "مستخدم",
     staff: "موظف",
+    employee: "موظف",
     manager: "مشرف",
+    management: "إدارة",
+    supervisor: "مشرف",
 };
 
 const STATUS_LABELS = {
@@ -28,7 +35,12 @@ const HEADERS = [
 
 const SKELETON_ROWS = [0, 1, 2, 3, 4];
 
-const label = (map, key) => (key ? map[String(key).toLowerCase()] || key : "—");
+const label = (map, key) => {
+    if (!key) return "—";
+    const str = String(key).toLowerCase().trim();
+    const normalizedKey = str.replace(/[\s-]+/g, "_");
+    return map[normalizedKey] || map[str] || key;
+};
 const getName = (u) => u.name || u.displayName || "—";
 const getPhone = (u) => u.phone || u.phoneNumber || "—";
 const getInitial = (u) =>
@@ -64,19 +76,30 @@ const RoleBadge = ({ role }) => {
 };
 
 const StatusBadge = ({ status }) => {
-    const active = status === "active";
+    const s = String(status || "").toLowerCase();
+    const active = s === "active";
+    const pending = s === "pending";
+    const blocked = s === "blocked";
+
+    let badgeClass = "border-border bg-card text-text-muted";
+    let dotClass = "bg-text-muted";
+
+    if (active) {
+        badgeClass = "border-success/30 bg-success/10 text-success";
+        dotClass = "abu-pulse bg-success";
+    } else if (pending) {
+        badgeClass = "border-warning/30 bg-warning/10 text-warning";
+        dotClass = "abu-pulse bg-warning";
+    } else if (blocked) {
+        badgeClass = "border-error/30 bg-error/10 text-error";
+        dotClass = "bg-error";
+    }
 
     return (
         <span
-            className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold ${
-                active ? "bg-success/10 text-success" : "bg-card text-text-muted"
-            }`}
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold ${badgeClass}`}
         >
-            <span
-                className={`h-2 w-2 rounded-full ${
-                    active ? "abu-pulse bg-success" : "bg-text-muted"
-                }`}
-            />
+            <span className={`h-2 w-2 rounded-full ${dotClass}`} />
             {label(STATUS_LABELS, status)}
         </span>
     );
@@ -91,7 +114,7 @@ const ChangeRoleButton = ({ onClick, fullWidth }) => (
         }`}
     >
         <FiEdit2 className="text-[10px] transition-transform duration-300 group-hover/btn:-rotate-12" />
-        تغيير الدور
+        إدارة الحساب
     </button>
 );
 

@@ -876,6 +876,81 @@ export const updateUserRole =
         }
     };
 
+export const updateUserStatus =
+    async (
+        userId,
+        newStatus
+    ) => {
+        try {
+            const userRef =
+                doc(
+                    db,
+                    USERS_COLLECTION,
+                    userId
+                );
+
+            await updateDoc(
+                userRef,
+                {
+                    status: newStatus,
+                    updatedAt:
+                        serverTimestamp(),
+                }
+            );
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Error updating user status:",
+                error
+            );
+
+            throw error;
+        }
+    };
+
+export const updateUserAccount =
+    async (
+        userId,
+        { role, status } = {}
+    ) => {
+        try {
+            const userRef =
+                doc(
+                    db,
+                    USERS_COLLECTION,
+                    userId
+                );
+
+            const updates = {
+                updatedAt:
+                    serverTimestamp(),
+            };
+
+            if (role !== undefined) {
+                updates.role = role;
+            }
+
+            if (status !== undefined) {
+                updates.status = status;
+            }
+
+            await updateDoc(
+                userRef,
+                updates
+            );
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Error updating user account:",
+                error
+            );
+
+            throw error;
+        }
+    };
+
 export {
     auth,
     db,

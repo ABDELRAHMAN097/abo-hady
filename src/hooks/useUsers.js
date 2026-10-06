@@ -10,6 +10,7 @@ import {
     getUserStats,
     searchUsers,
     updateUserRole,
+    updateUserAccount,
 } from "@/services/auth";
 
 const PAGE_SIZE = 5;
@@ -319,10 +320,14 @@ const useUsers = () => {
         ]);
     }, [fetchUsersPage, fetchStats]);
 
-    // Role update
-    const handleRoleUpdate = useCallback(
-        async (userId, newRole) => {
-            await updateUserRole(userId, newRole);
+    // User account update (role and/or status)
+    const handleUserUpdate = useCallback(
+        async (userId, updates) => {
+            if (typeof updates === "string") {
+                await updateUserRole(userId, updates);
+            } else {
+                await updateUserAccount(userId, updates);
+            }
 
             if (isSearching) {
                 searchRequestRef.current += 1;
@@ -395,7 +400,8 @@ const useUsers = () => {
         handlePreviousPage,
 
         refreshUsers,
-        handleRoleUpdate,
+        handleRoleUpdate: handleUserUpdate,
+        handleUserUpdate,
 
         isSearching,
     };
