@@ -43,32 +43,25 @@ export default function TopNavbar({ onMenuClick }) {
 
         <DropdownNotificat />
 
-        <Link
-          to={
-            "/" + locale + "/profile"
-          }
-        >
 
           <div className="flex items-center gap-3">
 
+        <Link to={"/" + locale + "/profile"}>
             <div className="text-right hidden sm:block">
               <p className="text-sm md:text-xs text-gray-400">
                 Welcome, Center
               </p>
-
               <p className="font-semibold text-primary-color">
                 Elnoor!
               </p>
             </div>
-
             <img
               src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"
               alt=""
               className="w-10 h-10 rounded-xl"
             />
-
-          </div>
         </Link>
+          </div>
       </div>
     </header>
   );

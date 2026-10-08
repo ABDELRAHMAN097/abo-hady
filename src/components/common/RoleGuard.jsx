@@ -26,17 +26,13 @@ export default function RoleGuard({ allowedRoles = [], redirectPath = "" }) {
         );
     }
 
-    // إذا لم يكن مسجلاً الدخول
     if (!user) {
         return <Navigate to={`/${locale}/login`} state={{ from: location }} replace />;
     }
-
-    // إذا كان عميلاً وحاول الوصول لأي صفحة في الداشبورد
     if (isCustomer) {
         return <Navigate to={redirectPath || `/${locale}`} replace />;
     }
 
-    // إذا تم تحديد أدوار معينة ولا يملكها المستخدم الحالي
     if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
         return (
             <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl shadow-sm my-6 mx-2">
