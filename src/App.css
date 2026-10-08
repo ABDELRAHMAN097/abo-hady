@@ -203,3 +203,26 @@ body {
   padding: 0;
   background-color: var(--color-background);
 }
+
+/* =========================================================
+   SCROLLBAR HIDING UTILITIES
+========================================================= */
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* scrolbar hidden */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}

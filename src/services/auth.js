@@ -7,6 +7,9 @@ import {
     signInWithPopup,
     signOut,
     updateProfile,
+    updatePassword,
+    reauthenticateWithCredential,
+    EmailAuthProvider,
     getAuth,
 } from "firebase/auth";
 
@@ -950,6 +953,69 @@ export const updateUserAccount =
             throw error;
         }
     };
+
+export const updateUserProfileData = async (userId, data = {}) => {
+    try {
+        const userRef = doc(db, USERS_COLLECTION, userId);
+        const updates = {
+            ...data,
+            updatedAt: serverTimestamp(),
+        };
+
+        if (data.name || data.phone || data.email) {
+            const searchFields = getSearchFields({
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+            });
+            Object.assign(updates, searchFields);
+        }
+
+        await updateDoc(userRef, updates);
+
+        if (auth.currentUser && auth.currentUser.uid === userId) {
+            const authProfileUpdates = {};
+            if (data.name) authProfileUpdates.displayName = data.name;
+            if (data.imageUrl) authProfileUpdates.photoURL = data.imageUrl;
+            if (Object.keys(authProfileUpdates).length > 0) {
+                await updateProfile(auth.currentUser, authProfileUpdates).catch((err) =>
+                    console.warn("Could not sync with Firebase Auth profile:", err)
+                );
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error("Error updating user profile data:", error);
+        throw error;
+    }
+};
+
+export const changeCurrentUserPassword = async (currentPassword, newPassword) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+        throw new Error("No authenticated user found.");
+    }
+
+    try {
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, newPassword);
+        return true;
+    } catch (error) {
+        console.error("Error changing password:", error);
+        throw error;
+    }
+};
+
+export const resendVerificationEmail = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("No authenticated user found.");
+    }
+    await sendEmailVerification(user);
+    return true;
+};
 
 export {
     auth,

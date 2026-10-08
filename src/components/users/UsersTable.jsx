@@ -46,18 +46,32 @@ const getPhone = (u) => u.phone || u.phoneNumber || "—";
 const getInitial = (u) =>
     (u.name || u.displayName || u.email || "?").trim().charAt(0).toUpperCase();
 
-const Avatar = ({ user }) => (
-    <div className="relative shrink-0">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary-color/30 bg-linear-to-br from-primary-color/25 to-primary-color/5 text-base font-bold text-primary-color">
-            {getInitial(user)}
-        </div>
-        {user.status === "active" && (
-            <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-surface bg-success" />
-        )}
-    </div>
-);
+const Avatar = memo(({ user }) => {
+    const [hasError, setHasError] = useState(false);
+    const photo = !hasError && (user?.imageUrl || user?.avatar || user?.photoURL);
 
-const RoleBadge = ({ role }) => {
+    return (
+        <div className="relative shrink-0">
+            {photo ? (
+                <img
+                    src={photo}
+                    alt={getName(user)}
+                    onError={() => setHasError(true)}
+                    className="h-11 w-11 rounded-2xl border border-primary-color/30 object-cover"
+                />
+            ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary-color/30 bg-linear-to-br from-primary-color/25 to-primary-color/5 text-base font-bold text-primary-color">
+                    {getInitial(user)}
+                </div>
+            )}
+            {user?.status === "active" && (
+                <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-surface bg-success" />
+            )}
+        </div>
+    );
+});
+
+const RoleBadge = memo(({ role }) => {
     const isAdmin = typeof role === "string" && role.toLowerCase().includes("admin");
     const Icon = isAdmin ? FiShield : FiUser;
 
@@ -73,9 +87,9 @@ const RoleBadge = ({ role }) => {
             {label(ROLE_LABELS, role)}
         </span>
     );
-};
+});
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = memo(({ status }) => {
     const s = String(status || "").toLowerCase();
     const active = s === "active";
     const pending = s === "pending";
@@ -103,7 +117,7 @@ const StatusBadge = ({ status }) => {
             {label(STATUS_LABELS, status)}
         </span>
     );
-};
+});
 
 const ChangeRoleButton = ({ onClick, fullWidth }) => (
     <button

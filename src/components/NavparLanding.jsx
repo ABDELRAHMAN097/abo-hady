@@ -236,6 +236,18 @@ export default function NavbarLanding({
                                 </button>
                             )}
 
+                        {/* Profile for Customers */}
+
+                        {user &&
+                            !canAccessDashboard && (
+                                <Link
+                                    to={`/${locale}/profile`}
+                                    className="rounded-xl border border-white/10 bg-white/10 px-5 py-2.5 text-sm transition hover:bg-white/15"
+                                >
+                                    {isArabic ? "حسابي" : "Profile"}
+                                </Link>
+                            )}
+
                         {/* Logout */}
 
                         {user && (
@@ -366,6 +378,19 @@ export default function NavbarLanding({
                                                 "nav.dashboard"
                                             )}
                                         </button>
+                                    )}
+
+                                {/* Profile for Customers */}
+
+                                {user &&
+                                    !canAccessDashboard && (
+                                        <Link
+                                            to={`/${locale}/profile`}
+                                            onClick={closeMenu}
+                                            className="rounded-xl bg-white/10 py-3 text-center"
+                                        >
+                                            {isArabic ? "حسابي" : "Profile"}
+                                        </Link>
                                     )}
 
                                 {/* Booking */}

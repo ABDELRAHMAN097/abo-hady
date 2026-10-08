@@ -29,14 +29,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const userName = profile?.name || user?.displayName || user?.email?.split("@")[0] || "المستخدم";
 
-  const roleTitles = {
-    super_admin: "سوبر أدمن",
-    admin: "أدمن",
-    driver: "سائق",
-    customer: "عميل",
-  };
-
-  const roleSubtitle = roleTitles[role] || "مستخدم";
+  const roleSubtitle = t(`roles.${role}`) || (role ? role.replace("_", " ") : "Member");
 
   const initials = userName
     .split(" ")
@@ -129,12 +122,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         `}
       >
         {/* Top */}
-        <div className="flex-1 overflow-y-auto px-2 py-4">
+        <div className="flex-1 overflow-y-auto px-2 py-4 no-scrollbar">
           {/* Logo */}
           <div className="mb-5">
             <Link to={`/${locale}`}>
               <AuthHeader
-                title="أبو هادي"
+                title={t("Brand Name")}
                 titleClass="text-hover-color text-3xl font-bold"
               />
             </Link>
@@ -185,7 +178,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         />
 
                         <span className="text-sm truncate font-medium">
-                          {item.name === "Users" ? "المستخدمين والأدوار" : t(item.name)}
+                          {t(item.name) || t(`pages.${item.name.toLowerCase()}`) || item.name}
                         </span>
                       </div>
 
@@ -228,7 +221,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             >
               <RiLogoutBoxRLine className="w-5 h-5 shrink-0" />
 
-              <span className="text-sm font-medium">تسجيل الخروج</span>
+              <span className="text-sm font-medium">{t("Logout")}</span>
             </button>
           </div>
 
@@ -237,9 +230,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <div className="w-full border-t border-white/10 mb-4" />
 
             <div className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-black/20 border border-white/10">
-              <div className="w-10 h-10 shrink-0 rounded-full bg-[#D4AF37] flex items-center justify-center text-gray-950 font-bold text-sm shadow-md">
-                {initials || "أ"}
-              </div>
+              {profile?.imageUrl || profile?.avatar || user?.photoURL ? (
+                <img
+                  src={profile?.imageUrl || profile?.avatar || user?.photoURL}
+                  alt={userName}
+                  className="w-10 h-10 shrink-0 rounded-full object-cover border border-white/20 shadow-md"
+                />
+              ) : (
+                <div className="w-10 h-10 shrink-0 rounded-full bg-[#D4AF37] flex items-center justify-center text-gray-950 font-bold text-sm shadow-md">
+                  {initials || "أ"}
+                </div>
+              )}
 
               <div className="min-w-0 flex flex-col flex-1">
                 <span className="text-sm font-bold text-white truncate">

@@ -4,6 +4,7 @@ import {
     HiOutlineCreditCard,
     HiOutlineUsers,
 } from "react-icons/hi";
+import { FiUser } from "react-icons/fi";
 import { TbFileText, TbSettings } from "react-icons/tb";
 
 export const menuItems = [
@@ -11,6 +12,12 @@ export const menuItems = [
         name: "Dashboard",
         path: "/dashboard",
         icon: HiOutlineChartSquareBar,
+        allowedRoles: ["driver", "admin", "super_admin"],
+    },
+    {
+        name: "Profile",
+        path: "/profile",
+        icon: FiUser,
         allowedRoles: ["driver", "admin", "super_admin"],
     },
     {
@@ -58,6 +65,10 @@ export const pageTitles = {
     "/dashboard": {
         en: "Dashboard",
         ar: "لوحة التحكم",
+    },
+    "/profile": {
+        en: "Profile",
+        ar: "الملف الشخصي",
     },
     "/users": {
         en: "Users & Roles",

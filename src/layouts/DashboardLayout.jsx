@@ -5,14 +5,18 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import TopNavbar from "../components/TopNavbar";
 import { pageTitles } from "../components/sidebarData";
+import { useI18n } from "@/i18n/i18n/context";
 
-export default function DashboardLayout() {
+export default function DashboardLayout({ children }) {
     const location = useLocation();
     const { locale } = useParams();
+    const { t } = useI18n();
 
     const currentPage = location.pathname.split("/").pop();
 
     const currentTitle =
+        t(`pages.${currentPage}`) ||
+        t(currentPage) ||
         pageTitles[`/${currentPage}`]?.[locale] ||
         pageTitles["/dashboard"]?.[locale] ||
         "Dashboard";
@@ -63,7 +67,7 @@ export default function DashboardLayout() {
                 </section>
 
                 <main className="flex-1 px-2">
-                    <Outlet />
+                    {children || <Outlet />}
                 </main>
             </div>
         </div>

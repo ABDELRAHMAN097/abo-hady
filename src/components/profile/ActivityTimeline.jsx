@@ -1,48 +1,59 @@
 import {
     FiActivity,
-    FiCalendar,
     FiCheckCircle,
     FiLogIn,
     FiUser,
+    FiCalendar,
 } from "react-icons/fi";
+import { useI18n } from "@/i18n/i18n/context";
 
-const ActivityTimeline = ({ role }) => {
-    const activities =
-        role === "customer"
+const ActivityTimeline = ({ user, role }) => {
+    const { locale } = useI18n();
+    const isArabic = locale === "ar";
+
+    const lastLoginText = user?.lastLogin || (isArabic ? "مؤخراً" : "Recently");
+    const createdText = user?.createdAt || (isArabic ? "سابقاً" : "Earlier");
+
+    const activities = [
+        {
+            title: isArabic ? "آخر تسجيل دخول للنظام" : "Last Account Login",
+            date: lastLoginText,
+            icon: FiLogIn,
+        },
+        ...(role === "driver"
             ? [
                   {
-                      title: "Booked a Toyota Corolla",
-                      date: "Today at 05:42 PM",
+                      title: isArabic ? "تحديث حالة السائق والجاهزية" : "Driver status synced",
+                      date: isArabic ? "اليوم" : "Today",
+                      icon: FiCheckCircle,
+                  },
+              ]
+            : role === "customer"
+            ? [
+                  {
+                      title: isArabic ? "استعراض أسطول السيارات" : "Explored car fleet",
+                      date: isArabic ? "مؤخراً" : "Recent",
                       icon: FiCalendar,
-                  },
-                  {
-                      title: "Updated phone number",
-                      date: "Yesterday at 02:18 PM",
-                      icon: FiUser,
-                  },
-                  {
-                      title: "Logged in",
-                      date: "Yesterday at 09:10 AM",
-                      icon: FiLogIn,
                   },
               ]
             : [
                   {
-                      title: "Updated profile information",
-                      date: "Today at 05:42 PM",
-                      icon: FiUser,
+                      title: isArabic ? "مراجعة لوحة التحكم والإحصائيات" : "Reviewed dashboard management",
+                      date: isArabic ? "اليوم" : "Today",
+                      icon: FiActivity,
                   },
-                  {
-                      title: "Completed a trip",
-                      date: "Yesterday at 06:20 PM",
-                      icon: FiCheckCircle,
-                  },
-                  {
-                      title: "Logged in",
-                      date: "Yesterday at 09:10 AM",
-                      icon: FiLogIn,
-                  },
-              ];
+              ]),
+        {
+            title: isArabic ? "تم تحديث البيانات الشخصية" : "Profile details active",
+            date: lastLoginText,
+            icon: FiUser,
+        },
+        {
+            title: isArabic ? "تم إنشاء الحساب والانضمام بنجاح" : "Account registered successfully",
+            date: createdText,
+            icon: FiCheckCircle,
+        },
+    ];
 
     return (
         <section className="rounded-2xl border border-white/5 bg-[#111827] p-5 sm:p-6">
@@ -53,11 +64,13 @@ const ActivityTimeline = ({ role }) => {
 
                 <div>
                     <h3 className="text-lg font-semibold text-[#F9FAFB]">
-                        Recent Activity
+                        {isArabic ? "النشاط وسجل الأحداث" : "Recent Activity"}
                     </h3>
 
                     <p className="text-sm text-[#9CA3AF]">
-                        Recent actions related to your account.
+                        {isArabic
+                            ? "سجل أحدث الإجراءات والعمليات المرتبطة بحسابك."
+                            : "Recent actions and events related to your account."}
                     </p>
                 </div>
             </div>

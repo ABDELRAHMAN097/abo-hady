@@ -1,31 +1,123 @@
+import { useRef, useState } from "react";
 import {
     FiCamera,
     FiMail,
     FiPhone,
     FiShield,
     FiUser,
+    FiLoader,
 } from "react-icons/fi";
+import { uploadToCloudinary } from "@/services/cloudinary";
+import { updateUserProfileData } from "@/services/auth";
+import { toast } from "react-toastify";
+import { useI18n } from "@/i18n/i18n/context";
 
 const roleLabels = {
-    customer: "Customer",
-    driver: "Driver",
-    admin: "Admin",
-    super_admin: "Super Admin",
+    customer: { en: "Customer", ar: "عميل" },
+    driver: { en: "Driver", ar: "سائق" },
+    admin: { en: "Admin", ar: "مشرف" },
+    super_admin: { en: "Super Admin", ar: "مدير عام" },
 };
 
-const ProfileHeader = ({ user, role }) => {
-    const roleLabel = roleLabels[role] || role;
+const ProfileHeader = ({ user, role, onProfileUpdated }) => {
+    const { locale } = useI18n();
+    const isArabic = locale === "ar";
+    const fileInputRef = useRef(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const roleLabel =
+        roleLabels[role]?.[locale] ||
+        roleLabels[role]?.en ||
+        role?.replace("_", " ") ||
+        "Member";
 
     const initials = user?.name
-        ?.split(" ")
+        ?.trim()
+        ?.split(/\s+/)
         .map((word) => word[0])
         .join("")
         .slice(0, 2)
         .toUpperCase();
 
+    const avatarUrl = user?.imageUrl || user?.avatar || "";
+
+    const handleAvatarClick = () => {
+        if (isUploading) return;
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Reset input value so same file can be re-selected if needed
+        e.target.value = "";
+
+        if (!file.type.startsWith("image/")) {
+            toast.error(
+                isArabic
+                    ? "يرجى اختيار ملف صورة صالح (JPG, PNG, WEBP)"
+                    : "Please select a valid image file"
+            );
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(
+                isArabic
+                    ? "حجم الصورة كبير جداً، الحد الأقصى 5 ميجابايت"
+                    : "Image size must be less than 5MB"
+            );
+            return;
+        }
+
+        try {
+            setIsUploading(true);
+            const uploadRes = await uploadToCloudinary(file);
+            const newImageUrl = uploadRes.imageUrl;
+
+            if (user?.uid) {
+                await updateUserProfileData(user.uid, {
+                    imageUrl: newImageUrl,
+                });
+            }
+
+            if (onProfileUpdated) {
+                await onProfileUpdated();
+            }
+
+            toast.success(
+                isArabic
+                    ? "تم تحديث الصورة الشخصية بنجاح!"
+                    : "Profile picture updated successfully!"
+            );
+        } catch (error) {
+            console.error("Avatar upload failed:", error);
+            toast.error(
+                error.message ||
+                    (isArabic
+                        ? "فشل رفع الصورة، يرجى المحاولة لاحقاً"
+                        : "Failed to upload image")
+            );
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const isActive = user?.status === "active";
+
     return (
         <section className="overflow-hidden rounded-2xl border border-white/5 bg-[#111827]">
-            <div className="relative h-28 bg-linear-to-r from-[#0F172A] via-[#111827] to-[#0B0C10]">
+            {/* Hidden File Input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+            />
+
+            <div className="relative h-28 bg-gradient-to-r from-[#0F172A] via-[#111827] to-[#0B0C10]">
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute -right-10 -top-20 h-52 w-52 rounded-full bg-[#10B981] blur-3xl" />
                 </div>
@@ -35,35 +127,50 @@ const ProfileHeader = ({ user, role }) => {
                 <div className="-mt-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                         {/* Avatar */}
-                        <div className="relative h-24 w-24 shrink-0 rounded-2xl border-4 border-[#111827] bg-[#1F2937]">
-                            {user?.avatar ? (
+                        <div className="relative h-24 w-24 shrink-0 rounded-2xl border-4 border-[#111827] bg-[#1F2937] shadow-xl">
+                            {avatarUrl ? (
                                 <img
-                                    src={user.avatar}
-                                    alt={user.name}
+                                    src={avatarUrl}
+                                    alt={user?.name || "Profile"}
                                     className="h-full w-full rounded-xl object-cover"
                                 />
                             ) : (
                                 <div className="flex h-full w-full items-center justify-center rounded-xl text-2xl font-bold text-[#10B981]">
-                                    {initials || <UserRound size={32} />}
+                                    {initials || <FiUser size={32} />}
                                 </div>
                             )}
 
+                            {/* Camera / Upload Button */}
                             <button
                                 type="button"
-                                className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#111827] bg-[#10B981] text-white transition hover:bg-[#059669]"
+                                onClick={handleAvatarClick}
+                                disabled={isUploading}
+                                className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#111827] bg-[#10B981] text-white transition hover:bg-[#059669] disabled:opacity-75 cursor-pointer shadow-md"
+                                title={
+                                    isArabic
+                                        ? "تغيير الصورة الشخصية"
+                                        : "Change profile picture"
+                                }
                                 aria-label="Change profile picture"
                             >
-                                <FiCamera size={15} />
+                                {isUploading ? (
+                                    <FiLoader
+                                        size={14}
+                                        className="animate-spin"
+                                    />
+                                ) : (
+                                    <FiCamera size={14} />
+                                )}
                             </button>
                         </div>
 
                         <div className="pb-1">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h2 className="text-xl font-bold text-[#F9FAFB]">
-                                    {user?.name || "User"}
+                                    {user?.name || (isArabic ? "مستخدم" : "User")}
                                 </h2>
 
-                                <span className="rounded-full bg-[#10B981]/10 px-2.5 py-1 text-xs font-medium text-[#10B981]">
+                                <span className="rounded-full bg-[#10B981]/10 px-2.5 py-1 text-xs font-medium text-[#10B981] border border-[#10B981]/20">
                                     {roleLabel}
                                 </span>
                             </div>
@@ -83,11 +190,25 @@ const ProfileHeader = ({ user, role }) => {
                     </div>
 
                     <div className="flex items-center gap-2 pb-1">
-                        <span className="flex items-center gap-2 rounded-full border border-[#10B981]/20 bg-[#10B981]/10 px-3 py-1.5 text-xs font-medium text-[#10B981]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-                            {user?.status === "active"
-                                ? "Active"
-                                : "Inactive"}
+                        <span
+                            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                                isActive
+                                    ? "border-[#10B981]/20 bg-[#10B981]/10 text-[#10B981]"
+                                    : "border-red-500/20 bg-red-500/10 text-red-400"
+                            }`}
+                        >
+                            <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                    isActive ? "bg-[#10B981]" : "bg-red-400"
+                                }`}
+                            />
+                            {isActive
+                                ? isArabic
+                                    ? "نشط"
+                                    : "Active"
+                                : isArabic
+                                ? "معطل / محظور"
+                                : "Blocked"}
                         </span>
                     </div>
                 </div>
@@ -100,10 +221,16 @@ const ProfileHeader = ({ user, role }) => {
 
                         <div>
                             <p className="text-xs text-[#9CA3AF]">
-                                Account Status
+                                {isArabic ? "حالة الحساب" : "Account Status"}
                             </p>
                             <p className="text-sm font-medium text-[#F9FAFB]">
-                                Verified Account
+                                {user?.emailVerified
+                                    ? isArabic
+                                        ? "حساب موثق ومفعل"
+                                        : "Verified Account"
+                                    : isArabic
+                                    ? "حساب نشط"
+                                    : "Standard Account"}
                             </p>
                         </div>
                     </div>
@@ -115,7 +242,7 @@ const ProfileHeader = ({ user, role }) => {
 
                         <div>
                             <p className="text-xs text-[#9CA3AF]">
-                                Member Since
+                                {isArabic ? "عضو منذ" : "Member Since"}
                             </p>
                             <p className="text-sm font-medium text-[#F9FAFB]">
                                 {user?.createdAt || "-"}

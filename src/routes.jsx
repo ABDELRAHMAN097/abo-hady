@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthLayout from "@/layouts/AuthLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import RoleGuard from "@/components/common/RoleGuard";
+import AuthGuard from "@/components/common/AuthGuard";
 
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import Login from "@/pages/auth/Login";
@@ -12,9 +13,11 @@ import VerifyCode from "@/pages/auth/VerifyCode";
 import SelectRole from "@/pages/auth/SelectRole";
 
 import Dashboard from "@/pages/dashboard/Dashboard";
-import Profile from "@/pages/dashboard/Profile";
+import ProfileWrapper from "@/pages/dashboard/ProfileWrapper";
 import Users from "@/pages/dashboard/Users";
 import Setting from "@/pages/dashboard/Setting";
+import Wallet from "@/pages/dashboard/Wallet";
+import Reports from "@/pages/dashboard/Reports";
 import LandingPage from "@/pages/LandingPage";
 
 import { DEFAULT_LOCALE } from "./i18n/i18n/constant";
@@ -64,6 +67,18 @@ export const routes = [
                 ],
             },
 
+            // Authenticated routes for any logged-in user (Customer, Driver, Admin)
+            {
+                element: <AuthGuard />,
+                children: [
+                    {
+                        path: "profile",
+                        element: <ProfileWrapper />,
+                    },
+                ],
+            },
+
+            // Management and Staff dashboard routes
             {
                 element: <RoleGuard />,
                 children: [
@@ -73,10 +88,6 @@ export const routes = [
                             {
                                 path: "dashboard",
                                 element: <Dashboard />,
-                            },
-                            {
-                                path: "profile",
-                                element: <Profile />,
                             },
                             {
                                 path: "users",
@@ -98,6 +109,14 @@ export const routes = [
                             {
                                 path: "setting",
                                 element: <Setting />,
+                            },
+                            {
+                                path: "wallet",
+                                element: <Wallet />,
+                            },
+                            {
+                                path: "reports",
+                                element: <Reports />,
                             },
                         ],
                     },

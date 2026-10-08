@@ -83,9 +83,17 @@ const ChangeRoleModal = ({
                 {/* Header */}
                 <div className="flex items-start justify-between border-b border-border pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary-color/30 bg-primary-color/10 text-primary-color">
-                            <FiUser size={20} />
-                        </div>
+                        {user.imageUrl || user.avatar || user.photoURL ? (
+                            <img
+                                src={user.imageUrl || user.avatar || user.photoURL}
+                                alt={user.name || "User"}
+                                className="h-11 w-11 rounded-2xl border border-primary-color/30 object-cover shrink-0"
+                            />
+                        ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary-color/30 bg-primary-color/10 text-primary-color">
+                                <FiUser size={20} />
+                            </div>
+                        )}
                         <div>
                             <h2 className="text-lg font-bold text-text-primary">
                                 إدارة حساب المستخدم
