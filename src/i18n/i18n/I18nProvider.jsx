@@ -12,6 +12,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./constant";
 import { I18nContext } from "./context";
 import { ToastContainer } from "react-toastify";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import { useEffect } from "react";
 
 const dictionary = { ar, en };
 
@@ -118,6 +119,14 @@ const I18nProvider = () => {
       />
     );
   }
+
+  useEffect(() => {
+    document.body.classList.remove("locale-en", "locale-ar");
+
+    document.body.classList.add(
+        locale === "en" ? "locale-en" : "locale-ar"
+    );
+}, [locale]);
 
   return (
     <I18nContext.Provider

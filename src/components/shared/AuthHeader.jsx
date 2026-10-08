@@ -11,7 +11,7 @@ export default function AuthHeader({
   return (
     <div className="space-y-2">
       <h1
-        className={`font-secondary  text-center ${titleClass}`}
+        className={`text-center ${titleClass}`}
       >
         {title}
       </h1>

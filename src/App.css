@@ -198,12 +198,18 @@
 
 
 body {
-  font-family: var(--font-primary);
   margin: 0;
   padding: 0;
   background-color: var(--color-background);
 }
 
+body.locale-en {
+  font-family: var(--font-secondary);
+}
+
+body.locale-ar {
+  font-family: var(--font-primary);
+}
 /* =========================================================
    SCROLLBAR HIDING UTILITIES
 ========================================================= */
