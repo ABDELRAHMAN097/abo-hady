@@ -9,8 +9,8 @@ import { toast } from "react-toastify";
 import {
     loginWithEmail,
     signInWithGoogle,
-    getUserProfile,
-} from "@/services/auth";
+} from "@/services/authService";
+import { getUserProfile } from "@/services/profileService";
 import { loginSchema } from "@/validations/authSchemas";
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);

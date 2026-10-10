@@ -1,6 +1,7 @@
 import {
     Link,
     useNavigate,
+    useLocation,
     useParams,
 } from "react-router-dom";
 import { useState } from "react";
@@ -11,7 +12,7 @@ import { RiLogoutBoxRLine } from "react-icons/ri";
 
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/i18n/i18n/context";
-import { logout as firebaseLogout } from "@/services/auth";
+import { logout as firebaseLogout } from "@/services/authService";
 
 const NAV_ITEMS = [
     ["home", "nav.home", "Home"],
@@ -27,6 +28,7 @@ export default function NavbarLanding({
 }) {
     const { locale = "en" } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const {
         user,
@@ -49,23 +51,42 @@ export default function NavbarLanding({
     const closeMenu = () =>
         setMobileMenuOpen(false);
 
+    const isLandingPage =
+        location.pathname === `/${locale}` ||
+        location.pathname === `/${locale}/`;
+
     const scrollToSection = (id) => {
         closeMenu();
 
-        if (id === "home") {
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth",
-            });
-            return;
-        }
+        if (isLandingPage) {
+            if (id === "home") {
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                });
+                if (window.location.hash) {
+                    window.history.replaceState(null, "", `/${locale}`);
+                }
+                return;
+            }
 
-        document
-            .getElementById(id)
-            ?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        } else {
+            // When opened from Profile or any non-landing page
+            if (id === "home") {
+                navigate(`/${locale}`);
+            } else {
+                navigate(`/${locale}#${id}`, {
+                    state: { scrollTo: id },
+                });
+            }
+        }
     };
 
     const handleAction = (

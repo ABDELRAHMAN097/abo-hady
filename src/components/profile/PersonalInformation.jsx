@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { FiLoader, FiUser, FiPhone, FiCalendar, FiMapPin } from "react-icons/fi";
-import { updateUserProfileData } from "@/services/auth";
+import { updateUserProfileData } from "@/services/profileService";
 import { toast } from "react-toastify";
 import { useI18n } from "@/i18n/i18n/context";
 
@@ -54,15 +54,19 @@ const PersonalInformation = ({ user, onProfileUpdated }) => {
 
         try {
             setSaving(true);
-            if (user?.uid) {
-                await updateUserProfileData(user.uid, {
-                    name: formData.name.trim(),
-                    phone: formData.phone.trim(),
-                    dateOfBirth: formData.dateOfBirth,
-                    city: formData.city.trim(),
-                    address: formData.address.trim(),
-                });
+            const targetUid = user?.uid || user?.id;
+            if (!targetUid) {
+                throw new Error(isArabic ? "لم يتم العثور على حساب المستخدم" : "User identifier not found");
             }
+
+            await updateUserProfileData(targetUid, {
+                name: formData.name.trim(),
+                phone: formData.phone.trim(),
+                dateOfBirth: formData.dateOfBirth || "",
+                city: formData.city.trim(),
+                address: formData.address.trim(),
+                email: user?.email || "",
+            });
 
             if (onProfileUpdated) {
                 await onProfileUpdated();

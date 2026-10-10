@@ -6,10 +6,8 @@ import {
 } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 
-import {
-    auth,
-    getUserProfile,
-} from "@/services/auth";
+import { auth } from "@/services/authService";
+import { getUserProfile } from "@/services/profileService";
 
 const AuthContext = createContext(null);
 

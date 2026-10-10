@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 import NavbarLanding from "../components/NavparLanding";
 import { FaCar } from "react-icons/fa";
@@ -181,6 +181,7 @@ const demoGallery = [
 export default function LandingPage() {
     const { locale = "en" } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
 
     const isArabic = locale === "ar";
@@ -188,6 +189,36 @@ export default function LandingPage() {
     // Immediate hydration from cache to prevent layout shift & save reads
     const [landing, setLanding] = useState(() => getCachedLandingData());
     const [loading, setLoading] = useState(() => !getCachedLandingData());
+
+    /* =========================================================
+       CROSS-PAGE SCROLL HANDLING (e.g. from Profile)
+    ========================================================= */
+
+    useEffect(() => {
+        const targetId =
+            location.state?.scrollTo ||
+            location.hash?.replace("#", "");
+
+        if (!targetId || targetId === "home") {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+            });
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            const element = document.getElementById(targetId);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        }, 150);
+
+        return () => clearTimeout(timer);
+    }, [location.pathname, location.hash, location.state]);
 
     /* =========================================================
        FIREBASE REALTIME SUBSCRIPTION

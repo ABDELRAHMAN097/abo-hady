@@ -11,7 +11,7 @@ import {
     searchUsers,
     updateUserRole,
     updateUserAccount,
-} from "@/services/auth";
+} from "@/services/userService";
 
 const PAGE_SIZE = 5;
 const SEARCH_DEBOUNCE = 350;

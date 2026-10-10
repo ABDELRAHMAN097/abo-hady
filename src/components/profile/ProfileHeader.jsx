@@ -8,7 +8,7 @@ import {
     FiLoader,
 } from "react-icons/fi";
 import { uploadToCloudinary } from "@/services/cloudinary";
-import { updateUserProfileData } from "@/services/auth";
+import { updateUserProfileData } from "@/services/profileService";
 import { toast } from "react-toastify";
 import { useI18n } from "@/i18n/i18n/context";
 
@@ -76,8 +76,9 @@ const ProfileHeader = ({ user, role, onProfileUpdated }) => {
             const uploadRes = await uploadToCloudinary(file);
             const newImageUrl = uploadRes.imageUrl;
 
-            if (user?.uid) {
-                await updateUserProfileData(user.uid, {
+            const targetUid = user?.uid || user?.id;
+            if (targetUid) {
+                await updateUserProfileData(targetUid, {
                     imageUrl: newImageUrl,
                 });
             }

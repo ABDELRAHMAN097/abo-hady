@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { HiOutlineMail } from "react-icons/hi";
 import { useFormik } from "formik";
 import { toast } from "react-toastify";
-import { resetPassword } from "@/services/auth";
+import { resetPassword } from "@/services/authService";
 import { forgotPasswordSchema } from "@/validations/authSchemas";
 
 

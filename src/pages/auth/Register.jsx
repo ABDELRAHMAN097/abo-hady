@@ -8,8 +8,7 @@ import { IoIosArrowDropleftCircle } from "react-icons/io";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useState } from "react";
-import { registerWithEmail, signInWithGoogle } from "../../services/auth";
+import { registerWithEmail, signInWithGoogle } from "@/services/authService";
 import { registerSchema } from "../../validations/authSchemas";
 
 export default function Register() {

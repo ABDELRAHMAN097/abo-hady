@@ -4,7 +4,7 @@ import { RiLogoutBoxRLine } from "react-icons/ri";
 
 import AuthHeader from "./shared/AuthHeader";
 import { menuItems } from "../components/sidebarData";
-import { logout as firebaseLogout } from "@/services/auth";
+import { logout as firebaseLogout } from "@/services/authService";
 import { useI18n } from "../i18n/i18n/context";
 import { useAuth } from "@/context/AuthContext";
 

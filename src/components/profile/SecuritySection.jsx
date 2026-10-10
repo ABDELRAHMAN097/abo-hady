@@ -8,7 +8,7 @@ import {
     FiAlertCircle,
     FiLock,
 } from "react-icons/fi";
-import { changeCurrentUserPassword, resendVerificationEmail, resetPassword } from "@/services/auth";
+import { changeCurrentUserPassword, resendVerificationEmail, resetPassword } from "@/services/authService";
 import { toast } from "react-toastify";
 import { useI18n } from "@/i18n/i18n/context";
 

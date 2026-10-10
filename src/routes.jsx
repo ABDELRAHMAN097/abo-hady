@@ -108,7 +108,12 @@ export const routes = [
                             },
                             {
                                 path: "setting",
-                                element: <Setting />,
+                                element: <Setting
+                                 allowedRoles={[
+                                            "admin",
+                                            "super_admin",
+                                        ]}
+                                />,
                             },
                             {
                                 path: "wallet",

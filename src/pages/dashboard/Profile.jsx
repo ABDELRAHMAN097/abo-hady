@@ -225,7 +225,7 @@ export default function Profile({ isCustomerView = false }) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 mb-4">
             {/* Header description for customer portal view */}
             {isCustomerView && (
                 <div>
