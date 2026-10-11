@@ -144,7 +144,7 @@
 ### 📁 الملفات المرتبطة:
 | الملف | الوظيفة |
 | :--- | :--- |
-| `src/services/cloudinary.js` | دوال `uploadToCloudinary`, `deleteFromCloudinary`, `getPublicIdFromUrl` |
+| `src/services/cloudinaryApi.js` | دوال رفع واستبدال وحذف الصور: `uploadImage`, `replaceImage`, `deleteImage`, `getPublicIdFromUrl` |
 | `.env` | يحتوي على مفاتيح الربط: `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET` |
 
 ---
@@ -189,7 +189,8 @@ src/services/
 ├── userService.js     # استعلامات وبحث وتحديث وإحصائيات المستخدمين للوحة التحكم
 ├── userUtils.js       # أدوات تنظيف النصوص والأرقام العربية والبحث الذكي
 ├── landing.js         # جلب وحفظ ومزامنة بيانات اللاندينج باج في الوقت الفعلي
-└── cloudinary.js      # رفع وإدارة الصور السحابية
+├── cloudinaryApi.js   # رفع واستبدال وحذف الصور السحابية (المعتمد)
+└── cloudinary.js      # ملف مهمل معاد توجيهه للتوافق الاحتياطي
 ```
 
 ### 📌 ملف إعدادات Firebase:

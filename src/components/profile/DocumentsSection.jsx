@@ -7,7 +7,11 @@ import {
     FiLoader,
     FiExternalLink,
 } from "react-icons/fi";
-import { uploadToCloudinary } from "@/services/cloudinary";
+import {
+    uploadImage,
+    replaceImage,
+    getPublicIdFromUrl,
+} from "@/services/cloudinaryApi";
 import { updateUserProfileData } from "@/services/profileService";
 import { toast } from "react-toastify";
 import { useI18n } from "@/i18n/i18n/context";
@@ -73,12 +77,30 @@ const DocumentsSection = ({ user, role, onProfileUpdated }) => {
 
         try {
             setUploadingDocKey(docKey);
-            const uploadRes = await uploadToCloudinary(file);
+
+            const existingPublicId =
+                userDocs[docKey]?.publicId ||
+                getPublicIdFromUrl(userDocs[docKey]?.url);
+
+            let uploadRes;
+            if (existingPublicId) {
+                uploadRes = await replaceImage(file, existingPublicId);
+            } else {
+                uploadRes = await uploadImage(file);
+            }
+
+            const docUrl = uploadRes?.url || uploadRes?.imageUrl;
+            const docPublicId =
+                uploadRes?.public_id ||
+                uploadRes?.publicId ||
+                existingPublicId ||
+                "";
+
             const updatedDocuments = {
                 ...userDocs,
                 [docKey]: {
-                    url: uploadRes.imageUrl,
-                    publicId: uploadRes.publicId,
+                    url: docUrl,
+                    publicId: docPublicId,
                     status: "Pending",
                     uploadedAt: new Date().toISOString(),
                 },

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-    uploadToCloudinary,
-    deleteFromCloudinary,
+    uploadImage,
+    replaceImage,
+    deleteImage,
     getPublicIdFromUrl,
-} from "@/services/cloudinary";
+} from "@/services/cloudinaryApi";
 import {
     getLandingPage,
     saveLandingPage,
@@ -317,36 +318,51 @@ export default function EditLanding() {
 
 
             /* =====================================================
-               UPLOAD NEW IMAGE
+               UPLOAD / REPLACE HERO IMAGE
             ===================================================== */
 
-            console.log(
-                "Starting hero upload..."
-            );
-
-            const uploaded =
-                await uploadToCloudinary(
+            let uploaded;
+            if (oldPublicId) {
+                console.log(
+                    "Replacing hero image on Cloudinary with publicId:",
+                    oldPublicId
+                );
+                uploaded = await replaceImage(
+                    heroFile,
+                    oldPublicId
+                );
+            } else {
+                console.log(
+                    "Uploading new hero image to Cloudinary..."
+                );
+                uploaded = await uploadImage(
                     heroFile
                 );
+            }
 
             console.log(
-                "New hero image uploaded:",
+                "Hero image processed:",
                 uploaded
             );
-
 
             /* =====================================================
                VALIDATE UPLOAD
             ===================================================== */
 
-            if (
-                !uploaded?.imageUrl
-            ) {
+            const imageUrl =
+                uploaded?.url || uploaded?.imageUrl;
+
+            if (!imageUrl) {
                 throw new Error(
                     "Cloudinary did not return an image URL."
                 );
             }
 
+            const publicId =
+                uploaded?.public_id ||
+                uploaded?.publicId ||
+                oldPublicId ||
+                "";
 
             /* =====================================================
                UPDATE PREVIEW IMMEDIATELY
@@ -361,11 +377,9 @@ export default function EditLanding() {
                     image: {
                         ...prev.hero.image,
 
-                        imageUrl:
-                            uploaded.imageUrl,
+                        imageUrl,
 
-                        publicId:
-                            uploaded.publicId || "",
+                        publicId,
 
                         alt:
                             prev.hero.image.alt || "",
@@ -375,60 +389,14 @@ export default function EditLanding() {
 
             setHeroFile(null);
 
-
-            /* =====================================================
-               DELETE OLD IMAGE
-            ===================================================== */
-
-            if (
-                oldPublicId &&
-                oldPublicId !==
-                uploaded.publicId
-            ) {
-                console.log(
-                    "Deleting old hero image:",
-                    oldPublicId
-                );
-
-                try {
-                    const deleteResult =
-                        await deleteFromCloudinary(
-                            oldPublicId
-                        );
-
-                    console.log(
-                        "Old hero image deleted:",
-                        deleteResult
-                    );
-                } catch (deleteError) {
-                    console.error(
-                        "Old hero image deletion failed:",
-                        deleteError
-                    );
-
-                    /*
-                     * IMPORTANT:
-                     * The new image was already uploaded
-                     * and the preview was already updated.
-                     *
-                     * So we DO NOT rollback the new image.
-                     */
-
-                    setError(
-                        "New hero image uploaded successfully, but the old image could not be deleted."
-                    );
-
-                    return;
-                }
-            }
-
-
             /* =====================================================
                SUCCESS
             ===================================================== */
 
             setSuccess(
-                "Hero image uploaded successfully."
+                oldPublicId
+                    ? "Hero image replaced successfully."
+                    : "Hero image uploaded successfully."
             );
 
         } catch (error) {
@@ -459,7 +427,7 @@ export default function EditLanding() {
 
         if (oldPublicId) {
             try {
-                await deleteFromCloudinary(
+                await deleteImage(
                     oldPublicId
                 );
             } catch (deleteError) {
@@ -730,27 +698,25 @@ export default function EditLanding() {
                 getPublicIdFromUrl(form?.gallery?.[index]?.imageUrl) ||
                 "";
 
-            const uploaded =
-                await uploadToCloudinary(
+            let uploaded;
+            if (oldPublicId) {
+                uploaded = await replaceImage(
+                    file,
+                    oldPublicId
+                );
+            } else {
+                uploaded = await uploadImage(
                     file
                 );
-
-            // Delete old image from Cloudinary to preserve space
-            if (
-                oldPublicId &&
-                oldPublicId !== uploaded.publicId
-            ) {
-                try {
-                    await deleteFromCloudinary(
-                        oldPublicId
-                    );
-                } catch (deleteError) {
-                    console.warn(
-                        "Old gallery image deletion failed:",
-                        deleteError
-                    );
-                }
             }
+
+            const imageUrl =
+                uploaded?.url || uploaded?.imageUrl;
+            const publicId =
+                uploaded?.public_id ||
+                uploaded?.publicId ||
+                oldPublicId ||
+                "";
 
             setForm((prev) => {
                 const gallery = [
@@ -760,11 +726,9 @@ export default function EditLanding() {
                 gallery[index] = {
                     ...gallery[index],
 
-                    imageUrl:
-                        uploaded.imageUrl,
+                    imageUrl,
 
-                    publicId:
-                        uploaded.publicId,
+                    publicId,
                 };
 
                 return {
@@ -784,7 +748,9 @@ export default function EditLanding() {
             });
 
             setSuccess(
-                "Gallery image uploaded successfully and previous image removed."
+                oldPublicId
+                    ? "Gallery image replaced successfully."
+                    : "Gallery image uploaded successfully."
             );
         } catch (err) {
             console.error(err);
@@ -840,7 +806,7 @@ export default function EditLanding() {
         // Delete from Cloudinary to preserve storage space
         if (oldPublicId) {
             try {
-                await deleteFromCloudinary(
+                await deleteImage(
                     oldPublicId
                 );
             } catch (deleteError) {

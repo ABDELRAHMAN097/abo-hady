@@ -7,7 +7,11 @@ import {
     FiUser,
     FiLoader,
 } from "react-icons/fi";
-import { uploadToCloudinary } from "@/services/cloudinary";
+import {
+    replaceImage,
+    uploadImage,
+    getPublicIdFromUrl,
+} from "@/services/cloudinaryApi";
 import { updateUserProfileData } from "@/services/profileService";
 import { toast } from "react-toastify";
 import { useI18n } from "@/i18n/i18n/context";
@@ -73,13 +77,33 @@ const ProfileHeader = ({ user, role, onProfileUpdated }) => {
 
         try {
             setIsUploading(true);
-            const uploadRes = await uploadToCloudinary(file);
-            const newImageUrl = uploadRes.imageUrl;
+
+            const currentPublicId =
+                user?.imagePublicId ||
+                user?.publicId ||
+                getPublicIdFromUrl(avatarUrl);
+
+            let uploadRes;
+            if (currentPublicId) {
+                uploadRes = await replaceImage(file, currentPublicId);
+            } else {
+                uploadRes = await uploadImage(file);
+            }
+
+            const newImageUrl = uploadRes?.url || uploadRes?.imageUrl;
+            const newPublicId =
+                uploadRes?.public_id ||
+                uploadRes?.publicId ||
+                currentPublicId ||
+                "";
 
             const targetUid = user?.uid || user?.id;
             if (targetUid) {
                 await updateUserProfileData(targetUid, {
                     imageUrl: newImageUrl,
+                    avatar: newImageUrl,
+                    imagePublicId: newPublicId,
+                    publicId: newPublicId,
                 });
             }
 
