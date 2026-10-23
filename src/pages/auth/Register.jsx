@@ -10,6 +10,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { registerWithEmail, signInWithGoogle } from "@/services/authService";
 import { registerSchema } from "../../validations/authSchemas";
+import { useState } from "react";
 
 export default function Register() {
     const navigate = useNavigate();
