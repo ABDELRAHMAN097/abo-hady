@@ -1,247 +1,112 @@
 import {
-    FaCar,
-    FaUserTie,
-    FaPlane,
-    FaShieldAlt,
+  FaBone,
+  FaRunning,
+  FaChild,
+  FaHeartbeat,
+  FaProcedures,
+  FaAppleAlt,
 } from "react-icons/fa";
 
-export default function LandingServices({
-    services,
-    locale,
-    isArabic,
-}) {
-    /* =========================================================
-       SERVICE ICONS
-    ========================================================= */
+const SERVICES = [
+  {
+    icon: FaBone,
+    title: "علاج العمود الفقري والانزلاق الغضروفي",
+    desc: "برامج متخصصة لعلاج آلام الرقبة والفقرات القطنية وعرق النسا بدون جراحة باستخدام أحدث أجهزة الشد الفقري الرقمي.",
+    tag: "الأكثر طلباً",
+  },
+  {
+    icon: FaProcedures,
+    title: "تأهيل ما بعد العمليات الجراحية",
+    desc: "إعادة التأهيل بعد عمليات تغيير المفاصل، جراحات الغضروف، تثبيت الفقرات، وترقيع الرباط الصليبي لعودة سريعة وآمنة للحياة اليومية.",
+    tag: "برنامج متكامل",
+  },
+  {
+    icon: FaHeartbeat,
+    title: "تأهيل كبار السن وخشونة المفاصل",
+    desc: "برامج علاجية لتقوية العضلات وتحسين التوازن وتخفيف آلام خشونة الركبتين وتأهيل حالات السكتة الدماغية والجلطات.",
+    tag: "رعاية مخصصة",
+  },
+  {
+    icon: FaRunning,
+    title: "إصابات الملاعب والتأهيل الرياضي",
+    desc: "علاج تمزق الأربطة، التهاب الأوتار، إصابات العضلات، وإعداد الرياضيين للعودة للمنافسات في أسرع وقت ممكن وبأعلى كفاءة.",
+    tag: "للرياضيين",
+  },
+  {
+    icon: FaChild,
+    title: "العلاج الطبيعي للأطفال",
+    desc: "جلسات متخصصة للأطفال لعلاج تأخر النمو الحركي، حالات الشلل الدماغي، والتشوهات القوامية بإشراف أخصائيين مؤهلين.",
+    tag: "عناية فائقة",
+  },
+  {
+    icon: FaAppleAlt,
+    title: "التغذية العلاجية ونحت القوام",
+    desc: "أنظمة غذائية علاجية مخصصة لمرضى السمنة ومشاكل المفاصل، مع أحدث أجهزة تفتيت الدهون وتحسين اللياقة البدنية والصحة العامة.",
+    tag: "صحة شاملة",
+  },
+];
 
-    const getServiceIcon = (icon) => {
-        const icons = {
-            car: <FaCar />,
-            driver: <FaUserTie />,
-            airport: <FaPlane />,
-            security: <FaShieldAlt />,
-        };
+export default function LandingServices() {
+  return (
+    <section id="services" className="py-20 bg-gray-50 border-y border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-[#88a531]/10 text-[#556e17] text-xs font-bold tracking-wide mb-3">
+            خدمات ألفا كير الطبية
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">
+            حلول متكاملة في العلاج الطبيعي والتأهيل الحركي
+          </h2>
+          <p className="mt-4 text-base text-gray-600 leading-relaxed">
+            نعتمد في ألفا كير على أحدث البروتوكولات العلاجية العالمية لتوفير علاج فعال وآمن يضمن شفاءك واستعادة نشاطك بأفضل نتيجة ممكنة.
+          </p>
+        </div>
 
-        return icons[icon] || <FaCar />;
-    };
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {SERVICES.map((s, idx) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={idx}
+                className="group relative bg-white rounded-2xl p-7 border border-gray-200/80 shadow-xs hover:shadow-xl hover:border-[#88a531] transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-14 h-14 rounded-2xl bg-[#88a531]/10 text-[#88a531] flex items-center justify-center text-2xl group-hover:bg-[#88a531] group-hover:text-white transition-all duration-300 shadow-xs">
+                      <Icon />
+                    </div>
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-700 group-hover:bg-[#88a531]/15 group-hover:text-[#556e17] transition">
+                      {s.tag}
+                    </span>
+                  </div>
 
-    /* =========================================================
-       SERVICES SECTION CONTENT
-    ========================================================= */
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#556e17] transition-colors">
+                    {s.title}
+                  </h3>
 
-    const content =
-        services?.[locale] ||
-        services?.en ||
-        services?.ar ||
-        {};
-
-    /* =========================================================
-       SERVICES CARDS
-       Firestore stores cards as MAP
-       Convert MAP -> ARRAY for rendering
-    ========================================================= */
-
-    const cards = services?.cards
-        ? Object.values(services.cards)
-        : [];
-
-    /* =========================================================
-       RENDER
-    ========================================================= */
-
-    return (
-        <section
-            id="services"
-            className="relative overflow-hidden bg-[#111827] py-20 sm:py-24 lg:py-28"
-        >
-            {/* =====================================================
-                BACKGROUND DECORATION
-            ===================================================== */}
-
-            <div
-                className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-whatsapp/5 blur-3xl"
-                aria-hidden="true"
-            />
-
-            <div
-                className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-whatsapp/5 blur-3xl"
-                aria-hidden="true"
-            />
-
-            {/* =====================================================
-                CONTENT CONTAINER
-            ===================================================== */}
-
-            <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-                {/* =================================================
-                    SECTION HEADER
-                ================================================= */}
-
-                <div
-                    className={`mb-12 max-w-2xl sm:mb-14 ${
-                        isArabic
-                            ? "text-right"
-                            : "text-left"
-                    }`}
-                >
-                    {/* EYEBROW */}
-
-                    {content.eyebrow && (
-                        <span className="text-whatsapp text-xs font-semibold uppercase tracking-widest sm:text-sm">
-                            {content.eyebrow}
-                        </span>
-                    )}
-
-                    {/* TITLE */}
-
-                    {content.title && (
-                        <h2 className="mt-3 text-3xl font-bold leading-tight text-text-primary sm:text-4xl lg:text-5xl">
-                            {content.title}
-                        </h2>
-                    )}
-
-                    {/* DESCRIPTION */}
-
-                    {content.description && (
-                        <p className="mt-5 leading-7 text-gray-400">
-                            {content.description}
-                        </p>
-                    )}
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {s.desc}
+                  </p>
                 </div>
 
-                {/* =================================================
-                    SERVICES CARDS
-                ================================================= */}
-
-                {cards.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-
-                        {cards.map(
-                            (
-                                service,
-                                index
-                            ) => {
-
-                                /* =================================
-                                   CARD LANGUAGE CONTENT
-                                ================================= */
-
-                                const serviceContent =
-                                    service?.[
-                                        locale
-                                    ] ||
-                                    service?.en ||
-                                    service?.ar ||
-                                    {};
-
-                                return (
-                                    <article
-                                        key={
-                                            service?.id ||
-                                            `service-${index}`
-                                        }
-                                        dir={
-                                            isArabic
-                                                ? "rtl"
-                                                : "ltr"
-                                        }
-                                        className="abu-card group relative overflow-hidden rounded-2xl border border-white/5 bg-[#1F2937] p-6 sm:p-7 hover:border-whatsapp/30"
-                                    >
-
-                                        {/* =================================
-                                           CARD GLOW
-                                        ================================= */}
-
-                                        <div
-                                            className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-whatsapp/5 blur-3xl transition-all duration-500 group-hover:bg-whatsapp/10"
-                                            aria-hidden="true"
-                                        />
-
-                                        {/* =================================
-                                           TOP
-                                        ================================= */}
-
-                                        <div className="relative z-10 flex items-start justify-between">
-
-                                            {/* ICON */}
-
-                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-whatsapp/10 text-xl text-whatsapp transition-all duration-300 group-hover:bg-whatsapp group-hover:text-black group-hover:scale-105">
-                                                {getServiceIcon(
-                                                    service?.icon
-                                                )}
-                                            </div>
-
-                                            {/* NUMBER */}
-
-                                            <span className="text-4xl font-bold leading-none text-gray-600/70 transition-colors duration-300 group-hover:text-whatsapp/20">
-                                                {String(
-                                                    index +
-                                                        1
-                                                ).padStart(
-                                                    2,
-                                                    "0"
-                                                )}
-                                            </span>
-                                        </div>
-
-                                        {/* =================================
-                                           TITLE
-                                        ================================= */}
-
-                                        <h3 className="relative z-10 mt-6 text-xl font-bold text-text-primary">
-                                            {
-                                                serviceContent.title
-                                            }
-                                        </h3>
-
-                                        {/* =================================
-                                           DESCRIPTION
-                                        ================================= */}
-
-                                        <p className="relative z-10 mt-3 leading-7 h-18 text-gray-400">
-                                            {
-                                                serviceContent.description
-                                            }
-                                        </p>
-
-                                        {/* =================================
-                                           ANIMATED LINE
-                                        ================================= */}
-
-                                        <div className="relative z-10 mt-6 h-px w-full overflow-hidden bg-white/5">
-
-                                            <div className="absolute inset-y-0 left-0 w-1/3 bg-whatsapp/60 abu-shimmer" />
-
-                                        </div>
-
-                                    </article>
-                                );
-                            }
-                        )}
-
-                    </div>
-                ) : (
-                    /* =============================================
-                       EMPTY STATE
-                    ============================================= */
-
-                    <div className="rounded-2xl border border-dashed border-white/10 bg-[#1F2937]/50 px-6 py-12 text-center">
-
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-whatsapp/10 text-xl text-whatsapp">
-                            <FaCar />
-                        </div>
-
-                        <p className="mt-4 text-sm text-gray-400">
-                            {isArabic
-                                ? "لا توجد خدمات متاحة حالياً."
-                                : "No services available at the moment."}
-                        </p>
-
-                    </div>
-                )}
-
-            </div>
-        </section>
-    );
+                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <a
+                    href="#booking-card"
+                    className="text-xs font-bold text-[#88a531] hover:text-[#556e17] transition flex items-center gap-1"
+                  >
+                    <span>احجز استشارتك</span>
+                    <span>←</span>
+                  </a>
+                  <span className="text-xs text-gray-400">جلسات فردية مجهزة</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 }
+
